@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -NoProfile -Command \"Remove-Item -Force _smoke_gen.py; Remove-Item -Recurse -Force data, artifacts -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force __pycache__ -ErrorAction SilentlyContinue; 'cleaned. remaining files:'; Get-ChildItem -Name\")",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=\"Aditya223-lab\" commit -m \"Baseline: project snapshot before Tier-2 feature work\" -m \"Co-Authored-By: Claude Opus 4.7 \\(1M context\\) <noreply@anthropic.com>\")"
+    ]
+  }
+}

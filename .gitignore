@@ -1,0 +1,37 @@
+# ── Dependencies ───────────────────────────────────────────────
+node_modules/
+
+# ── Build output ───────────────────────────────────────────────
+.next/
+out/
+build/
+dist/
+target/
+*.class
+tsconfig.tsbuildinfo
+
+# ── Python ─────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# ── Runtime data (regenerated automatically) ───────────────────
+backend/data/
+frontend/client/.data/
+
+# ── Large CICIDS2017 dataset (re-downloadable from the CIC) ─────
+python-ml/data/cicids2017/
+
+# ── Secrets / environment ──────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Editor / OS noise ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

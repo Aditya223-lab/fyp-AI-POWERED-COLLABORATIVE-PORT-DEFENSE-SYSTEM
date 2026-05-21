@@ -10,7 +10,9 @@
       "Bash(git rm *)",
       "Bash(git -c user.name=\"Aditya223-lab\" commit -m \"Exclude frontend/ from root repo \\(it is its own repository\\)\" -m \"Co-Authored-By: Claude Opus 4.7 \\(1M context\\) <noreply@anthropic.com>\")",
       "PowerShell(Set-Location backend; .\\\\mvnw.cmd -q -DskipTests compile; $code = $LASTEXITCODE; Set-Location ..; Write-Output \"EXIT CODE: $code\")",
-      "PowerShell(Set-Location \"C:\\\\Users\\\\thapa\\\\Desktop\\\\fyp-AI-POWERED-COLLABORATIVE-PORT-DEFENSE-SYSTEM\\\\backend\"; .\\\\mvnw.cmd -q -DskipTests compile; Write-Output \"EXIT CODE: $LASTEXITCODE\")"
+      "PowerShell(Set-Location \"C:\\\\Users\\\\thapa\\\\Desktop\\\\fyp-AI-POWERED-COLLABORATIVE-PORT-DEFENSE-SYSTEM\\\\backend\"; .\\\\mvnw.cmd -q -DskipTests compile; Write-Output \"EXIT CODE: $LASTEXITCODE\")",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\thapa\\\\Desktop\\\\fyp-AI-POWERED-COLLABORATIVE-PORT-DEFENSE-SYSTEM\\\\python-ml\"; python export_model_card.py; Write-Output \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(npm *)"
     ]
   }
 }

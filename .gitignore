@@ -35,3 +35,6 @@ Thumbs.db
 *.log
 .idea/
 .vscode/
+
+# ── frontend/ is its own separate git repository ───────────────
+frontend/

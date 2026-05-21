@@ -11,6 +11,7 @@ import com.example.portdefense.dto.Mapper;
 import com.example.portdefense.dto.ThreatEventDto;
 import com.example.portdefense.repository.OrganizationRepository;
 import com.example.portdefense.repository.ThreatRepository;
+import com.example.portdefense.service.AlertService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,13 +27,16 @@ public class ThreatIngestController {
     private final ThreatRepository threatRepository;
     private final OrganizationRepository orgRepository;
     private final EventsController sse;
+    private final AlertService alertService;
 
     public ThreatIngestController(ThreatRepository threatRepository,
                                   OrganizationRepository orgRepository,
-                                  EventsController sse) {
+                                  EventsController sse,
+                                  AlertService alertService) {
         this.threatRepository = threatRepository;
         this.orgRepository = orgRepository;
         this.sse = sse;
+        this.alertService = alertService;
     }
 
     @PostMapping("/ingest")
@@ -76,6 +80,11 @@ public class ThreatIngestController {
         }
 
         threatRepository.save(t);
+
+        // Auto-raise an alert if this threat is critical or a suspected
+        // zero-day. AlertService applies its own per-source-IP cooldown.
+        alertService.createFromThreat(t);
+
         ThreatEventDto dto = Mapper.toDto(t);
         sse.broadcast(dto);
         return ResponseEntity.ok(dto);

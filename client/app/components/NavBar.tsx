@@ -18,6 +18,7 @@ const allLinks: LinkItem[] = [
   { href: '/', label: 'Dashboard' },
   { href: '/attacks', label: 'Attacks' },
   { href: '/severity', label: 'Severity' },
+  { href: '/model', label: 'AI Model' },
   { href: '/admin', label: 'Admin', admin: true },
   { href: '/user', label: 'User' },
   { href: '/pricing', label: 'Pricing', hideForPremium: true },

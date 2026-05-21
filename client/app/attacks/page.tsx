@@ -31,6 +31,7 @@ export default function AttacksPage() {
   const [seeded, setSeeded] = useState<ThreatEvent[]>([]);
   const [seedReady, setSeedReady] = useState(false);
   const [filter, setFilter] = useState<Severity | 'all'>('all');
+  const [attackType, setAttackType] = useState<string>('all');
   const [ipQuery, setIpQuery] = useState('');
   const [myOrgIds, setMyOrgIds] = useState<Set<string> | null>(
     isAdmin ? new Set() : null,
@@ -89,9 +90,20 @@ export default function AttacksPage() {
     return threats.filter((t) => myOrgIds.has(t.organizationId));
   }, [threats, isAdmin, myOrgIds]);
 
+  // Distinct attack types present in the current data, for the type filter
+  // bar. Computed from the data (not hard-coded) so it adapts to whatever the
+  // AI model actually classified.
+  const attackTypes = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of scoped) if (t.attackType) set.add(t.attackType);
+    return ['all', ...Array.from(set).sort()];
+  }, [scoped]);
+
   const filtered = useMemo(() => {
     let out = scoped;
     if (filter !== 'all') out = out.filter((t) => t.severity === filter);
+    if (attackType !== 'all')
+      out = out.filter((t) => t.attackType === attackType);
     const q = ipQuery.trim();
     if (q) {
       out = out.filter(
@@ -101,7 +113,7 @@ export default function AttacksPage() {
       );
     }
     return out;
-  }, [scoped, filter, ipQuery]);
+  }, [scoped, filter, attackType, ipQuery]);
 
   // Animate on initial mount and on filter change ONLY. Previously this
   // depended on scoped.length, which ticks every ~3s when a new threat
@@ -126,7 +138,7 @@ export default function AttacksPage() {
         },
       );
     },
-    { scope: root, dependencies: [filter] },
+    { scope: root, dependencies: [filter, attackType] },
   );
 
   return (
@@ -220,6 +232,33 @@ export default function AttacksPage() {
           ))}
         </div>
       </div>
+
+      {/* Attack-type filter — one button per attack family the AI classified */}
+      {attackTypes.length > 1 && (
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] uppercase tracking-widest text-white/40 mr-1">
+            Attack type
+          </span>
+          {attackTypes.map((a) => (
+            <button
+              key={a}
+              onClick={() => setAttackType(a)}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition ${
+                attackType === a
+                  ? 'bg-accent-purple/20 border-accent-purple/50 text-white'
+                  : 'border-white/10 text-white/60 hover:bg-white/5'
+              }`}
+            >
+              {a === 'all' ? 'ALL' : a}
+              {a !== 'all' && (
+                <span className="ml-2 text-[10px] text-white/50">
+                  {scoped.filter((t) => t.attackType === a).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!isAdmin && myOrgIds !== null && myOrgIds.size === 0 && (
         <div className="mb-6 px-4 py-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-sm text-yellow-200">

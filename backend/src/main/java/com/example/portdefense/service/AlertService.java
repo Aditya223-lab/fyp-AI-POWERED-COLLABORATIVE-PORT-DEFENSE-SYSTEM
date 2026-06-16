@@ -18,14 +18,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AlertService {
 
     private final AlertRepository repo;
+    private final MailService mailService;
 
     // Per-source-IP cooldown so a burst of threats from one attacker does not
     // flood the alert list. Mirrors the cooldown idea in the Python detector.
     private final ConcurrentHashMap<String, Instant> lastAlertBySource = new ConcurrentHashMap<>();
     private static final Duration COOLDOWN = Duration.ofSeconds(60);
 
-    public AlertService(AlertRepository repo) {
+    public AlertService(AlertRepository repo, MailService mailService) {
         this.repo = repo;
+        this.mailService = mailService;
     }
 
     public List<AlertDto> getAll() {
@@ -80,6 +82,10 @@ public class AlertService {
         System.out.println("[AlertService] auto-raised alert " + saved.getId()
                 + " for " + (zeroDay ? "zero-day" : "critical") + " threat from "
                 + t.getSourceIP());
+        // Fire-and-forget email notification. MailService no-ops when alerts
+        // are disabled (default) and swallows SMTP errors so ingest is never
+        // blocked by mail trouble.
+        mailService.sendAlertEmail(saved);
         return saved;
     }
 }

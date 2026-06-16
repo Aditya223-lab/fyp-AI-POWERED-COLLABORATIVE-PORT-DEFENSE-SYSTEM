@@ -8,11 +8,13 @@ import com.example.portdefense.domain.Industry;
 import com.example.portdefense.domain.InsightType;
 import com.example.portdefense.domain.OrgStatus;
 import com.example.portdefense.domain.Organization;
+import com.example.portdefense.domain.Role;
 import com.example.portdefense.repository.AlertRepository;
 import com.example.portdefense.repository.AttackPredictionRepository;
 import com.example.portdefense.repository.CollaborativeInsightRepository;
 import com.example.portdefense.repository.OrganizationRepository;
 import com.example.portdefense.repository.ThreatRepository;
+import com.example.portdefense.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import java.time.Duration;
@@ -29,6 +31,8 @@ public class DataSeeder implements CommandLineRunner {
     private final AlertRepository alertRepo;
     private final AttackPredictionRepository predictionRepo;
     private final CollaborativeInsightRepository insightRepo;
+    private final UserRepository userRepo;
+    private final AuthService authService;
     private final ThreatGenerator generator;
 
     public DataSeeder(OrganizationRepository orgRepo,
@@ -36,17 +40,23 @@ public class DataSeeder implements CommandLineRunner {
                       AlertRepository alertRepo,
                       AttackPredictionRepository predictionRepo,
                       CollaborativeInsightRepository insightRepo,
+                      UserRepository userRepo,
+                      AuthService authService,
                       ThreatGenerator generator) {
         this.orgRepo = orgRepo;
         this.threatRepo = threatRepo;
         this.alertRepo = alertRepo;
         this.predictionRepo = predictionRepo;
         this.insightRepo = insightRepo;
+        this.userRepo = userRepo;
+        this.authService = authService;
         this.generator = generator;
     }
 
     @Override
     public void run(String... args) {
+        seedUsers();
+
         if (orgRepo.count() > 0) return;
 
         List<Organization> orgs = seedOrganizations();
@@ -54,6 +64,13 @@ public class DataSeeder implements CommandLineRunner {
         seedAlerts();
         seedPredictions();
         seedInsights(orgs);
+    }
+
+    // Default demo accounts. Change passwords before any non-local deployment.
+    private void seedUsers() {
+        if (userRepo.count() > 0) return;
+        authService.register("admin@demo.com", "admin12345", "Demo Admin", Role.ADMIN);
+        authService.register("user@demo.com", "user12345", "Demo User", Role.USER);
     }
 
     private List<Organization> seedOrganizations() {

@@ -22,7 +22,7 @@ public class ThreatGenerator {
     // dashboard reads consistently whether a threat comes from the AI or here.
     private static final String[] ATTACK_TYPES = {
             "PortScan", "DoS", "DDoS", "BruteForce", "WebAttack", "Bot",
-            "Infiltration", "Heartbleed"
+            "Infiltration", "Heartbleed" , 
     };
 
     /**

@@ -21,6 +21,7 @@ const allLinks: LinkItem[] = [
   { href: '/model', label: 'AI Model' },
   { href: '/admin', label: 'Admin', admin: true },
   { href: '/user', label: 'User' },
+  { href: '/contact', label: 'Contact' },
   { href: '/pricing', label: 'Pricing', hideForPremium: true },
 ];
 

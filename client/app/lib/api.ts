@@ -1,3 +1,4 @@
+import { getSession } from 'next-auth/react';
 import type {
   Alert,
   AttackPrediction,
@@ -17,9 +18,26 @@ const BASE =
 export const SSE_URL =
   process.env.NEXT_PUBLIC_SSE_URL || `${BASE}/events/threats`;
 
+// next-auth's getSession() hits /api/auth/session once per call but the route
+// is debounced internally, so this is cheap. Server components can't call it,
+// but every consumer of this module is a client component today.
+async function authHeaders(): Promise<HeadersInit> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const session = await getSession();
+    if (session?.accessToken) {
+      return { Authorization: `Bearer ${session.accessToken}` };
+    }
+  } catch {
+    // Session fetch failures should not block public endpoints.
+  }
+  return {};
+}
+
 async function getJSON<T>(path: string): Promise<T> {
+  const auth = await authHeaders();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...auth },
     cache: 'no-store',
   });
   if (!res.ok) {
@@ -29,9 +47,10 @@ async function getJSON<T>(path: string): Promise<T> {
 }
 
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const auth = await authHeaders();
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...auth },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -41,9 +60,10 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function patchJSON<T>(path: string, body: unknown): Promise<T> {
+  const auth = await authHeaders();
   const res = await fetch(`${BASE}${path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...auth },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -53,7 +73,8 @@ async function patchJSON<T>(path: string, body: unknown): Promise<T> {
 }
 
 async function deleteJSON(path: string): Promise<void> {
-  const res = await fetch(`${BASE}${path}`, { method: 'DELETE' });
+  const auth = await authHeaders();
+  const res = await fetch(`${BASE}${path}`, { method: 'DELETE', headers: { ...auth } });
   if (!res.ok && res.status !== 204) {
     throw new ApiError(`DELETE ${path} → HTTP ${res.status}`, res.status);
   }

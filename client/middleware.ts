@@ -35,5 +35,6 @@ export const config = {
     '/attacks/:path*',
     '/severity/:path*',
     '/user/:path*',
+    '/contact/:path*',
   ],
 };

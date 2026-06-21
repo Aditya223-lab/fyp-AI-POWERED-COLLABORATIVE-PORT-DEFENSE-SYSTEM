@@ -10,6 +10,10 @@ declare module 'next-auth' {
       role: Role;
       plan: Plan;
     } & DefaultSession['user'];
+    /** HS256 JWT minted for the Spring backend. See lib/auth.ts. */
+    accessToken?: string;
+    /** Unix seconds. When this passes, the client should re-fetch the session. */
+    accessTokenExp?: number;
   }
 }
 
@@ -17,5 +21,8 @@ declare module 'next-auth/jwt' {
   interface JWT {
     role: Role;
     plan: Plan;
+    /** Backend-bound JWT minted in the `jwt` callback. */
+    backendToken?: string;
+    backendTokenExp?: number;
   }
 }

@@ -13,7 +13,11 @@ export default withAuth(
       return NextResponse.redirect(url);
     }
 
-    const premiumOnly = pathname.startsWith('/attacks') || pathname.startsWith('/severity');
+    const premiumOnly =
+      pathname.startsWith('/attacks') ||
+      pathname.startsWith('/severity') ||
+      pathname.startsWith('/monitor') ||
+      pathname.startsWith('/scan');
     if (premiumOnly && token?.plan !== 'premium' && token?.role !== 'admin') {
       const url = req.nextUrl.clone();
       url.pathname = '/pricing';
@@ -34,6 +38,8 @@ export const config = {
     '/admin/:path*',
     '/attacks/:path*',
     '/severity/:path*',
+    '/monitor/:path*',
+    '/scan/:path*',
     '/user/:path*',
     '/contact/:path*',
   ],

@@ -7,7 +7,7 @@ import gsap from 'gsap';
 
 interface Props {
   orgCount?: number | null;
-  threatLevel?: number; // 0-100 — drives the meter fill width
+  threatLevel?: number; // 0-100, drives the meter fill width
   collaborators?: { name: string; color: string }[];
 }
 
@@ -26,7 +26,7 @@ export default function MaritimeHero({
   const root = useRef<HTMLDivElement>(null);
 
   // Entrance animation: runs ONCE on mount. Uses fromTo + clearProps so an
-  // interrupted run can never leave text stuck at opacity:0 — that was the
+  // interrupted run can never leave text stuck at opacity:0, that was the
   // bug where the left-side hero text disappeared.
   useGSAP(
     () => {
@@ -66,7 +66,7 @@ export default function MaritimeHero({
     { scope: root },
   );
 
-  // Meter fill animates independently whenever threatLevel changes — keeping
+  // Meter fill animates independently whenever threatLevel changes, keeping
   // it OUT of the entrance timeline means a late stats-fetch can't re-trigger
   // (and interrupt) the headline animation.
   useGSAP(
@@ -130,7 +130,7 @@ export default function MaritimeHero({
         >
           Decentralized AI.
         </span>
-        <span className="hero-line block text-gradient mt-1">
+        <span className="hero-line block text-gradient-animated mt-1">
           Unified Naval Shield.
         </span>
       </h1>
@@ -145,14 +145,16 @@ export default function MaritimeHero({
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/attacks"
-          className="hero-cta inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-blue text-primary-dark font-semibold hover:opacity-90 transition glow"
+          className="hero-cta group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-accent-cyan via-accent-blue to-accent-purple bg-[length:200%_auto] hover:bg-right text-primary-dark font-semibold transition-all duration-500 glow hover:shadow-glow-purple hover:-translate-y-0.5"
         >
           Join Defense Grid
-          <span aria-hidden>→</span>
+          <span aria-hidden className="transition-transform group-hover:translate-x-1">
+            →
+          </span>
         </Link>
         <Link
           href="/severity"
-          className="hero-cta inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-white font-semibold hover:bg-white/5 transition"
+          className="hero-cta inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-accent-purple/30 text-white font-semibold hover:bg-accent-purple/10 hover:border-accent-purple/50 hover:shadow-glow-purple transition-all duration-300"
         >
           Severity Matrix
         </Link>

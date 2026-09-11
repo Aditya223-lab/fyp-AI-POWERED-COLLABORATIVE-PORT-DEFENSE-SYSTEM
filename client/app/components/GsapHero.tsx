@@ -45,7 +45,7 @@ export default function GsapHero() {
 
       <p className="hero-sub mt-6 text-lg text-white/70 leading-relaxed">
         Detect port scans in real time, share anonymized threat intelligence
-        across organizations, and learn from every attack — without ever
+        across organizations, and learn from every attack, without ever
         exposing your raw data.
       </p>
 

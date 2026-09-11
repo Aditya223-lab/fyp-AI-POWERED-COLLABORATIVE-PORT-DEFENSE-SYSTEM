@@ -103,7 +103,7 @@ export default function UserPage() {
 
   // Animate cards in ONCE on mount. Previously this re-ran when orgs went
   // from null → loaded (deps was [orgs === null]), which reset every card
-  // back to opacity:0 and re-staggered — making the page look stuck loading
+  // back to opacity:0 and re-staggered, making the page look stuck loading
   // for ~1.7s after content was already available. fromTo + clearProps is
   // the same fix we used on /admin, /, and /attacks.
   useGSAP(
@@ -157,7 +157,7 @@ export default function UserPage() {
   }
 
   function viewHtml(id: string) {
-    window.open(reportAPI.downloadUrl(id, 'html'), '_blank', 'noopener');
+    window.open(reportAPI.downloadUrl(id, 'html'), '_blank', 'opener');
   }
 
   function downloadJson(id: string) {
@@ -198,11 +198,11 @@ export default function UserPage() {
           Your account
         </p>
         <h1 className="mt-2 font-display text-4xl font-bold">
-          My <span className="text-gradient">Operations</span>
+          My <span className="text-gradient-animated">Operations</span>
         </h1>
         <p className="mt-3 text-white/60 max-w-2xl">
           Severity, alerts and reports for the organizations you own. Federation
-          totals are not shown here — only your assets.
+          totals are not shown here, only your assets.
         </p>
       </header>
 
@@ -309,7 +309,7 @@ export default function UserPage() {
         </div>
       </div>
 
-      {/* Reports — only the ones this user generated */}
+      {/* Reports, only the ones this user generated */}
       <div className="user-card glass rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
           <div>

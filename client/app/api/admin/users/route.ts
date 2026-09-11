@@ -5,6 +5,7 @@ import {
   deleteUser,
   listUsers,
   setUserPlan,
+  setUserPassword,
   type CustomerEntry,
 } from '@/lib/userStore';
 import type { Plan } from '@/types/next-auth';
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as {
     email?: string;
     plan?: Plan;
+    password?: string;
   } | null;
   if (!body?.email || !body.plan) {
     return NextResponse.json(
@@ -51,7 +53,16 @@ export async function POST(req: Request) {
   if (body.plan !== 'free' && body.plan !== 'premium') {
     return NextResponse.json({ error: 'invalid_plan' }, { status: 400 });
   }
+  if (body.password !== undefined && body.password !== '') {
+    if (typeof body.password !== 'string' || body.password.length < 8) {
+      return NextResponse.json(
+        { error: 'password_too_short' },
+        { status: 400 },
+      );
+    }
+  }
   setUserPlan(email, body.plan);
+  if (body.password) setUserPassword(email, body.password);
   return NextResponse.json({ email, plan: body.plan, ok: true });
 }
 

@@ -97,7 +97,7 @@ export default function LoginPage() {
 
     // Take over the redirect (so the status effect doesn't pre-empt the
     // welcome card), then hard-navigate so middleware re-runs with the
-    // session cookie set — a soft router push leaves the page frozen here.
+    // session cookie set, a soft router push leaves the page frozen here.
     redirecting.current = true;
     setLoading(null);
     setWelcome({ name, dest });
@@ -237,17 +237,17 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="login-row mt-6 p-3 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 space-y-1">
+          {/* <div className="login-row mt-6 p-3 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 space-y-1">
             <p className="font-semibold text-white/80">Demo accounts</p>
-            <p><span className="font-mono">admin@demo.com / admin123</span> — admin + premium</p>
-            <p><span className="font-mono">pro@demo.com / pro123</span> — premium customer</p>
-            <p><span className="font-mono">user@demo.com / user123</span> — free customer</p>
-          </div>
+            <p><span className="font-mono">admin@demo.com / admin123</span>, admin + premium</p>
+            <p><span className="font-mono">pro@demo.com / pro123</span>, premium customer</p>
+            <p><span className="font-mono">user@demo.com / user123</span>, free customer</p>
+          </div> */}
             </>
           )}
         </div>
       </div>
-    </div>
+    </div> 
   );
 }
 

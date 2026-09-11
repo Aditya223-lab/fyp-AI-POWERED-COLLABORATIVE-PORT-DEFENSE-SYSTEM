@@ -220,7 +220,7 @@ export default function EditOrgModal({ open, org, onClose, onSaved }: Props) {
                 className="mt-1 w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm appearance-none"
               >
                 <option value="" className="bg-primary-dark">
-                  — unassigned —
+                  unassigned
                 </option>
                 {/* Always include current owner in case they're no longer premium */}
                 {ownerEmail &&

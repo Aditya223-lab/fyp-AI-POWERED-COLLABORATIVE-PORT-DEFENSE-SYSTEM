@@ -46,35 +46,41 @@ export default function PricingPage() {
     { scope: root },
   );
 
-  async function startKhaltiCheckout() {
+  async function startEsewaCheckout() {
     if (status !== 'authenticated') {
       signIn(undefined, { callbackUrl: '/pricing' });
       return;
     }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/payment/khalti/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 99900 }),
-      });
+      // The server decides the price and signs the payload; we just relay it
+      // to eSewa as a form POST (ePay v2 requires a browser form submit).
+      const res = await fetch('/api/payment/esewa/initiate', { method: 'POST' });
       const data = await res.json();
-      if (!res.ok || !data.payment_url) {
-        if (data.error === 'khalti_not_configured') {
-          toast.error('Khalti not configured. Add KHALTI_SECRET_KEY to .env.local.');
-        } else {
-          toast.error(data.error || 'Could not start checkout');
-        }
+      if (!res.ok || !data.action || !data.fields) {
+        toast.error(data.error || 'Could not start checkout');
         setSubmitting(false);
         return;
       }
-      window.location.href = data.payment_url;
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.action;
+      Object.entries(data.fields as Record<string, string>).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
     } catch (e) {
-      toast.error('Network error starting Khalti checkout');
+      toast.error('Network error starting eSewa checkout');
       setSubmitting(false);
     }
   }
 
+  const isDev = process.env.NODE_ENV !== 'production';
   const isPremium = session?.user?.plan === 'premium' || session?.user?.role === 'admin';
 
   return (
@@ -84,7 +90,7 @@ export default function PricingPage() {
           Pricing
         </p>
         <h1 className="mt-2 font-display text-4xl font-bold">
-          Defend more. <span className="text-gradient">Pay less.</span>
+          Defend more. <span className="text-gradient-animated">Pay less.</span>
         </h1>
         <p className="mt-3 text-white/60 max-w-xl mx-auto">
           Join the federation for free. Upgrade to Premium to unlock the live
@@ -93,6 +99,11 @@ export default function PricingPage() {
         {lockedPage && (
           <div className="mt-4 inline-block px-3 py-1.5 rounded-full bg-accent-yellow/10 border border-accent-yellow/30 text-xs text-accent-yellow">
             🔒 <span className="font-mono">/{lockedPage}</span> requires Premium
+          </div>
+        )}
+        {params.get('payment') === 'failed' && (
+          <div className="mt-4 inline-block px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-xs text-red-300">
+            Payment was cancelled or failed, you have not been charged.
           </div>
         )}
       </header>
@@ -128,7 +139,7 @@ export default function PricingPage() {
           <p className="mt-2 font-display text-4xl font-bold">
             NPR 999 <span className="text-base text-white/50 font-normal">/ month</span>
           </p>
-          <p className="text-sm text-white/50 mt-1">paid via Khalti</p>
+          <p className="text-sm text-white/50 mt-1">paid via eSewa</p>
           <ul className="mt-6 space-y-2 text-sm flex-1">
             {features.premium.map((f) => (
               <li key={f} className="flex gap-2 items-start">
@@ -142,21 +153,30 @@ export default function PricingPage() {
               onClick={() => router.push('/attacks')}
               className="mt-6 px-4 py-2.5 rounded-lg bg-gradient-to-r from-accent-cyan to-accent-blue text-primary-dark font-semibold hover:opacity-90 transition"
             >
-              You're Premium · Go to /attacks
+              You&apos;re Premium · Go to /attacks
             </button>
           ) : (
             <button
-              onClick={startKhaltiCheckout}
+              onClick={startEsewaCheckout}
               disabled={submitting}
               className="mt-6 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-accent-cyan to-accent-blue text-primary-dark font-semibold hover:opacity-90 transition disabled:opacity-60"
             >
-              {submitting ? 'Starting checkout…' : 'Upgrade with Khalti'}
+              {submitting ? 'Starting checkout…' : 'Upgrade with eSewa'}
               <span aria-hidden>→</span>
             </button>
           )}
           <p className="mt-3 text-[11px] text-white/40">
             Sandbox checkout. No real charge in test mode.
           </p>
+          {isDev && !isPremium && (
+            <button
+              onClick={() => router.push('/payment/mock-esewa?amount=999')}
+              disabled={submitting}
+              className="mt-3 w-full px-4 py-2 rounded-lg border border-dashed border-accent-yellow/40 text-accent-yellow/90 text-xs hover:bg-accent-yellow/5 transition disabled:opacity-60"
+            >
+              ⚡ Dev: pay via simulated eSewa page
+            </button>
+          )}
         </div>
       </div>
     </div>

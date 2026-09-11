@@ -65,7 +65,7 @@ export default function ThreatList({ threats, limit = 8 }: Props) {
                 <span className="font-mono text-white">{t.sourceIP}</span>
                 <span className="text-white/40">→</span>
                 <span className="font-mono text-accent-cyan">
-                  :{t.targetPort}
+                  {t.targetIp ? `${t.targetIp}:${t.targetPort}` : `:${t.targetPort}`}
                 </span>
                 {t.attackType && (
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30">

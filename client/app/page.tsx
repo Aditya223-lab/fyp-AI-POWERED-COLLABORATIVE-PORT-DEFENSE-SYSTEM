@@ -1,7 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import HomeLanding from '@/components/HomeLanding';
 import MaritimeHero from '@/components/MaritimeHero';
 import ThreatList from '@/components/ThreatList';
 import { dashboardAPI } from '@/lib/api';
@@ -17,7 +19,28 @@ const SceneShield = dynamic(() => import('@/components/SceneShield'), {
   ),
 });
 
-export default function DashboardPage() {
+// Root route: logged-out visitors get the marketing home page; logged-in
+// users get their live dashboard. The dashboard's data hooks live inside
+// DashboardView, so they only ever run once the user is authenticated.
+export default function RootPage() {
+  const { status } = useSession();
+
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto px-6 py-32 grid place-items-center text-white/40 text-sm">
+        Loading…
+      </div>
+    );
+  }
+
+  if (status === 'authenticated') {
+    return <DashboardView />;
+  }
+
+  return <HomeLanding />;
+}
+
+function DashboardView() {
   const { threats, status, eventCount } = useThreatStream(30);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -69,7 +92,7 @@ export default function DashboardPage() {
           />
           <div className="relative h-[420px] sm:h-[480px] lg:h-[520px] rounded-3xl overflow-hidden border border-accent-cyan/20 bg-primary-dark/40 ring-1 ring-accent-cyan/10">
             {/* Subtle radial glow behind the 3D scene */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.15),transparent_60%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_60%)] pointer-events-none" />
             <SceneShield />
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-xs pointer-events-none">
               <span className="px-2 py-1 rounded bg-black/40 backdrop-blur text-accent-cyan font-mono uppercase tracking-wider">
@@ -95,8 +118,8 @@ export default function DashboardPage() {
       <section className="container mx-auto px-6 pb-12 relative">
         {statsError && (
           <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-300">
-            Backend unreachable: <span className="font-mono">{statsError}</span>{' '}
-            — make sure Spring is running on{' '}
+            Backend unreachable: <span className="font-mono">{statsError}</span>.{' '}
+            Make sure Spring is running on{' '}
             <span className="font-mono">http://localhost:8080</span>.
           </div>
         )}
@@ -147,7 +170,7 @@ export default function DashboardPage() {
               ◍ FL Round
             </p>
             <p className="font-display text-4xl font-bold mt-2 text-white font-mono">
-              #{stats?.federatedLearningRound ?? '—'}
+              #{stats?.federatedLearningRound ?? '-'}
             </p>
             <p className="text-[11px] text-white/40 mt-1">
               Encrypted gradients aggregating
@@ -158,10 +181,10 @@ export default function DashboardPage() {
           <div className="relative overflow-hidden rounded-2xl border border-accent-yellow/30 bg-gradient-to-br from-accent-yellow/15 to-orange-500/5 p-5 card-hover">
             <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
             <p className="text-[10px] uppercase tracking-widest text-accent-yellow font-bold">
-              ⚡ Avg Response
+              Avg Response
             </p>
             <p className="font-display text-4xl font-bold mt-2 text-white">
-              {stats?.averageResponseTime ?? '—'}
+              {stats?.averageResponseTime ?? '-'}
               <span className="text-white/40 text-xl ml-1">ms</span>
             </p>
             <p className="text-[11px] text-white/40 mt-1">
@@ -202,22 +225,22 @@ export default function DashboardPage() {
               <div className="space-y-3 text-sm">
                 <Row
                   label="Current Round"
-                  value={`#${stats?.federatedLearningRound ?? '—'}`}
+                  value={`#${stats?.federatedLearningRound ?? '-'}`}
                   color="text-accent-cyan"
                 />
                 <Row
                   label="Model Accuracy"
-                  value={stats ? `${Math.round(stats.detectionRate)}%` : '—'}
+                  value={stats ? `${Math.round(stats.detectionRate)}%` : '-'}
                   color="text-accent-green"
                 />
                 <Row
                   label="False Positives"
-                  value={stats ? `${Math.round(stats.falsePositiveRate)}%` : '—'}
+                  value={stats ? `${Math.round(stats.falsePositiveRate)}%` : '-'}
                   color="text-accent-yellow"
                 />
                 <Row
                   label="Collab Score"
-                  value={stats ? `${Math.round(stats.collaborationScore)}/100` : '—'}
+                  value={stats ? `${Math.round(stats.collaborationScore)}/100` : '-'}
                   color="text-accent-purple"
                 />
               </div>

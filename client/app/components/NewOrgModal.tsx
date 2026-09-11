@@ -203,7 +203,7 @@ export default function NewOrgModal({ open, onClose, onCreated }: Props) {
               className="mt-1 w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm appearance-none"
             >
               <option value="" className="bg-primary-dark">
-                — unassigned —
+                unassigned
               </option>
               {premiumCustomers.map((c) => (
                 <option key={c.email} value={c.email} className="bg-primary-dark">

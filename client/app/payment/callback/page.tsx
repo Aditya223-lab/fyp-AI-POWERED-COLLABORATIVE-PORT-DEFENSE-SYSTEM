@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { orgAPI } from '@/lib/api';
 
 type State =
   | { kind: 'verifying' }
@@ -12,56 +13,103 @@ type State =
 export default function PaymentCallbackPage() {
   const params = useSearchParams();
   const router = useRouter();
-  const { update } = useSession();
+  const { data: session, update, status } = useSession();
   const [state, setState] = useState<State>({ kind: 'verifying' });
 
-  const pidx = params.get('pidx');
-  const khaltiStatus = params.get('status');
+  // eSewa redirects back with ?data=<base64 payload>. The simulated checkout
+  // redirects here with ?dev=1 (the upgrade is applied server-side either way).
+  const esewaData = params.get('data');
+  const isDev = params.get('dev') === '1';
+  const email = session?.user?.email;
 
   useEffect(() => {
+    // Wait for the session to resolve so we have the email for provisioning.
+    if (status === 'loading') return;
+
     let cancelled = false;
-    async function run() {
-      if (!pidx) {
-        setState({ kind: 'failed', status: 'missing_pidx', message: 'No payment id in URL.' });
-        return;
-      }
-      if (khaltiStatus && khaltiStatus !== 'Completed') {
-        setState({
-          kind: 'failed',
-          status: khaltiStatus,
-          message: `Khalti reported status: ${khaltiStatus}.`,
-        });
-        return;
-      }
+
+    // Give the freshly-upgraded customer a personal demo org so /attacks shows
+    // data immediately. Best-effort: if it fails, the live stream still fills
+    // their view over time, so we never block the success screen on it.
+    async function provisionDemoOrg() {
+      if (!email) return;
       try {
-        const res = await fetch('/api/payment/khalti/verify', {
+        await orgAPI.provisionDemo(email);
+      } catch {
+        /* non-fatal */
+      }
+    }
+
+    async function succeed(transactionId?: string, amount?: number) {
+      await provisionDemoOrg();
+      if (cancelled) return;
+      setState({ kind: 'success', transactionId, amount });
+      update(); // re-read the session so the plan badge / gating updates
+    }
+
+    async function runDevUpgrade() {
+      try {
+        const res = await fetch('/api/payment/esewa/dev-complete', { method: 'POST' });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !data.ok) {
+          setState({ kind: 'failed', status: data.error ?? 'dev_upgrade_failed' });
+          return;
+        }
+        await succeed(data.transaction_id, data.amount);
+      } catch {
+        if (!cancelled) {
+          setState({
+            kind: 'failed',
+            status: 'network_error',
+            message: 'Network error during upgrade.',
+          });
+        }
+      }
+    }
+
+    async function verifyEsewa(dataB64: string) {
+      try {
+        const res = await fetch('/api/payment/esewa/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pidx }),
+          body: JSON.stringify({ data: dataB64 }),
         });
         const data = await res.json();
         if (cancelled) return;
         if (data.ok) {
-          setState({ kind: 'success', transactionId: data.transaction_id, amount: data.amount });
-          // Force NextAuth to re-read the session so the plan badge updates.
-          update();
+          await succeed(data.transaction_id, data.amount);
         } else {
           setState({
             kind: 'failed',
-            status: data.status ?? 'Unknown',
+            status: data.status ?? data.error ?? 'Unknown',
             message: data.error,
           });
         }
-      } catch (e) {
-        if (cancelled) return;
-        setState({ kind: 'failed', status: 'network_error', message: 'Network error during verification.' });
+      } catch {
+        if (!cancelled) {
+          setState({
+            kind: 'failed',
+            status: 'network_error',
+            message: 'Network error during verification.',
+          });
+        }
       }
     }
-    run();
+
+    if (isDev) {
+      runDevUpgrade();
+    } else if (esewaData) {
+      verifyEsewa(esewaData);
+    } else {
+      setState({ kind: 'failed', status: 'missing_payment_id', message: 'No payment data in URL.' });
+    }
+
     return () => {
       cancelled = true;
     };
-  }, [pidx, khaltiStatus, update]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   return (
     <div className="min-h-[70vh] grid place-items-center px-6 py-12">
@@ -71,7 +119,7 @@ export default function PaymentCallbackPage() {
             <div className="mx-auto w-12 h-12 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
             <h1 className="mt-5 font-display text-2xl font-bold">Verifying payment…</h1>
             <p className="mt-2 text-sm text-white/60">
-              Confirming with Khalti. This usually takes a second.
+              Confirming with eSewa. This usually takes a second.
             </p>
           </>
         )}
@@ -83,7 +131,8 @@ export default function PaymentCallbackPage() {
             </div>
             <h1 className="mt-5 font-display text-2xl font-bold">Welcome to Premium</h1>
             <p className="mt-2 text-sm text-white/60">
-              Payment verified. /attacks and /severity are now unlocked.
+              Payment verified. /attacks and /severity are now unlocked, and your
+              organization is already collecting live attacks.
             </p>
             {state.transactionId && (
               <p className="mt-3 text-xs font-mono text-white/40 break-all">

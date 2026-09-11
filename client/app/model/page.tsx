@@ -1,5 +1,5 @@
 'use client';
-// AI Model page — shows how the real RandomForest threat classifier performs.
+// AI Model page, shows how the real RandomForest threat classifier performs.
 // Data comes from public/model-card.json, which python-ml/export_model_card.py
 // generates from the genuine CICIDS2017 training artifacts.
 
@@ -86,10 +86,10 @@ export default function ModelPage() {
           Machine learning
         </p>
         <h1 className="mt-2 font-display text-4xl font-bold">
-          AI <span className="text-gradient">Model</span>
+          AI <span className="text-gradient-animated">Model</span>
         </h1>
         <p className="mt-3 text-white/60 max-w-2xl">
-          The threat classifier behind PortDefense — a {card.algorithm} trained
+          The threat classifier behind PortDefense, a {card.algorithm} trained
           on the real {card.dataset} intrusion-detection dataset. Every number
           here is measured on held-out test data the model never saw during
           training.

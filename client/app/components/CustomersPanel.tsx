@@ -7,7 +7,7 @@ import type { CustomerRecord, Organization } from '@/types';
 
 interface Props {
   orgs: Organization[];
-  // Called after any mutation that affects orgs — parent should re-fetch
+  // Called after any mutation that affects orgs, parent should re-fetch
   // from the backend, NOT trust optimistic local state.
   onOrgsChanged: () => void;
 }
@@ -21,8 +21,16 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
   const [users, setUsers] = useState<CustomerRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newPlan, setNewPlan] = useState<'free' | 'premium'>('premium');
   const [submitting, setSubmitting] = useState(false);
+  // Set/reset-password dialog state
+  const [pwTarget, setPwTarget] = useState<CustomerRecord | null>(null);
+  const [pwValue, setPwValue] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+
+  const MIN_PW = 8;
 
   async function refresh() {
     try {
@@ -40,11 +48,15 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
     refresh();
   }, []);
 
-  async function upsert(email: string, plan: 'free' | 'premium') {
+  async function upsert(
+    email: string,
+    plan: 'free' | 'premium',
+    password?: string,
+  ) {
     const res = await fetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, plan }),
+      body: JSON.stringify(password ? { email, plan, password } : { email, plan }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -69,16 +81,57 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
       toast.error('Email required');
       return;
     }
+    if (newPassword && newPassword.length < MIN_PW) {
+      toast.error(`Password must be at least ${MIN_PW} characters`);
+      return;
+    }
     setSubmitting(true);
     try {
-      await upsert(newEmail.trim(), newPlan);
-      toast.success(`${newEmail} → ${newPlan}`);
+      await upsert(newEmail.trim(), newPlan, newPassword || undefined);
+      toast.success(
+        newPassword
+          ? `${newEmail} → ${newPlan} (login enabled)`
+          : `${newEmail} → ${newPlan}`,
+      );
       setNewEmail('');
+      setNewPassword('');
       await refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to add user');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function openPasswordDialog(u: CustomerRecord) {
+    setPwValue('');
+    setPwConfirm('');
+    setPwTarget(u);
+  }
+
+  async function handleSavePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pwTarget) return;
+    if (pwValue.length < MIN_PW) {
+      toast.error(`Password must be at least ${MIN_PW} characters`);
+      return;
+    }
+    if (pwValue !== pwConfirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await upsert(pwTarget.email, pwTarget.plan, pwValue);
+      toast.success(
+        `Password ${pwTarget.hasPassword ? 'reset' : 'set'}, ${pwTarget.email} can now log in`,
+      );
+      setPwTarget(null);
+      await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to set password');
+    } finally {
+      setPwSaving(false);
     }
   }
 
@@ -96,7 +149,7 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
   async function handleRemove(u: CustomerRecord) {
     try {
       await remove(u.email);
-      // Backend orgs that referenced this owner are not auto-cleared — we
+      // Backend orgs that referenced this owner are not auto-cleared, we
       // surface that in the UI by simply leaving ownerEmail intact. The admin
       // can reassign.
       toast.success(`Removed ${u.email}`);
@@ -122,8 +175,9 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
         <div>
           <h3 className="font-display font-semibold">Customers</h3>
           <p className="text-xs text-white/50 mt-0.5">
-            Manage signed-up users. Mark someone Premium after Khalti confirms
-            payment (or manually until Khalti is wired up).
+            Manage signed-up users. Premium is granted automatically after
+            eSewa confirms payment, or manually here. Set a password to let a
+            customer log in.
           </p>
         </div>
         {users && (
@@ -143,12 +197,20 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
           onChange={(e) => setNewEmail(e.target.value)}
           placeholder="user@example.com"
           type="email"
-          className="col-span-12 sm:col-span-6 px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm"
+          className="col-span-12 sm:col-span-4 px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm"
+        />
+        <input
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="password (optional, min 8, enables login)"
+          type="password"
+          autoComplete="new-password"
+          className="col-span-12 sm:col-span-3 px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm"
         />
         <select
           value={newPlan}
           onChange={(e) => setNewPlan(e.target.value as 'free' | 'premium')}
-          className="col-span-6 sm:col-span-3 px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm appearance-none"
+          className="col-span-6 sm:col-span-2 px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm appearance-none"
         >
           <option value="free" className="bg-primary-dark">free</option>
           <option value="premium" className="bg-primary-dark">premium</option>
@@ -165,7 +227,7 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
       {error && (
         <div className="px-6 py-3 text-sm text-red-300">
           {error.includes('403')
-            ? 'Forbidden — admin access required.'
+            ? 'Forbidden, admin access required.'
             : `Failed to load: ${error}`}
         </div>
       )}
@@ -181,7 +243,14 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
               className="px-6 py-4 grid grid-cols-12 gap-3 items-center hover:bg-white/5"
             >
               <div className="col-span-12 sm:col-span-4">
-                <p className="font-medium truncate">{u.email}</p>
+                <p className="font-medium truncate">
+                  {u.email}
+                  {u.hasPassword && (
+                    <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border bg-emerald-400/15 text-emerald-300 border-emerald-400/30 align-middle">
+                      login
+                    </span>
+                  )}
+                </p>
                 {u.upgradedAt && (
                   <p className="text-[11px] text-white/40">
                     updated {new Date(u.upgradedAt).toLocaleDateString()}
@@ -223,6 +292,17 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
               </div>
               <div className="col-span-12 sm:col-span-2 flex items-center justify-end gap-2 text-xs">
                 <button
+                  onClick={() => openPasswordDialog(u)}
+                  className="text-white/60 hover:text-white hover:underline"
+                  title={
+                    u.hasPassword
+                      ? 'Reset this customer’s login password'
+                      : 'Set a password so this customer can log in'
+                  }
+                >
+                  {u.hasPassword ? 'Reset pw' : 'Set pw'}
+                </button>
+                <button
                   onClick={() => handleTogglePlan(u)}
                   className="text-accent-cyan hover:underline"
                 >
@@ -249,6 +329,60 @@ export default function CustomersPanel({ orgs, onOrgsChanged }: Props) {
           </div>
         )}
       </div>
+
+      {pwTarget && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => !pwSaving && setPwTarget(null)}
+        >
+          <form
+            onSubmit={handleSavePassword}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm glass rounded-2xl p-6 border border-white/10 bg-primary-dark/90"
+          >
+            <h4 className="font-display font-semibold">
+              {pwTarget.hasPassword ? 'Reset password' : 'Set password'}
+            </h4>
+            <p className="mt-1 text-xs text-white/50 break-all">
+              {pwTarget.email} will be able to log in with this password.
+            </p>
+            <input
+              autoFocus
+              value={pwValue}
+              onChange={(e) => setPwValue(e.target.value)}
+              placeholder={`New password (min ${MIN_PW} characters)`}
+              type="password"
+              autoComplete="new-password"
+              className="mt-4 w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm"
+            />
+            <input
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              placeholder="Confirm password"
+              type="password"
+              autoComplete="new-password"
+              className="mt-2 w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 focus:border-accent-cyan/50 outline-none text-sm"
+            />
+            <div className="mt-5 flex justify-end gap-2 text-sm">
+              <button
+                type="button"
+                disabled={pwSaving}
+                onClick={() => setPwTarget(null)}
+                className="px-4 py-2 rounded-lg border border-white/15 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={pwSaving}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-accent-cyan to-accent-blue text-primary-dark font-semibold disabled:opacity-60"
+              >
+                {pwSaving ? 'Saving…' : 'Save password'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

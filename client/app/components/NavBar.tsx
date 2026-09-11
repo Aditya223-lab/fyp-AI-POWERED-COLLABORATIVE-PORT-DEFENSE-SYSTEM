@@ -11,13 +11,15 @@ type LinkItem = {
   href: string;
   label: string;
   admin?: boolean;
+  premiumOnly?: boolean;
   hideForPremium?: boolean;
 };
 
 const allLinks: LinkItem[] = [
-  { href: '/', label: 'Dashboard' },
   { href: '/attacks', label: 'Attacks' },
   { href: '/severity', label: 'Severity' },
+  { href: '/monitor', label: 'Monitor', premiumOnly: true },
+  { href: '/scan', label: 'Scan', premiumOnly: true },
   { href: '/model', label: 'AI Model' },
   { href: '/admin', label: 'Admin', admin: true },
   { href: '/user', label: 'User' },
@@ -33,14 +35,24 @@ export default function NavBar() {
   const isPremium =
     session?.user?.role === 'admin' || session?.user?.plan === 'premium';
 
-  const links = allLinks.filter((l) => {
+  // The root route is a marketing "Home" page when logged out and the live
+  // "Dashboard" once signed in, same href, label follows the session.
+  const homeLink: LinkItem = {
+    href: '/',
+    label: session?.user ? 'Dashboard' : 'Home',
+  };
+
+  const links = [homeLink, ...allLinks].filter((l) => {
     if (l.admin && session?.user?.role !== 'admin') return false;
+    if (l.premiumOnly && !isPremium) return false;
     if (l.hideForPremium && isPremium) return false;
     return true;
   });
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
+      {/* Gradient hairline pinned to the bottom edge of the bar */}
+      <span className="absolute bottom-0 left-0 right-0 h-px gradient-hairline pointer-events-none" />
       <div className="container mx-auto px-6 h-20 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3 group shrink-0">
           <span className="relative inline-flex">
@@ -64,7 +76,7 @@ export default function NavBar() {
                 href={l.href}
                 className={`relative px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   active
-                    ? 'text-white'
+                    ? 'text-white bg-gradient-to-r from-accent-cyan/15 via-accent-blue/10 to-accent-purple/15 border border-accent-cyan/20 shadow-glow-cyan'
                     : 'text-white/60 hover:text-white hover:bg-white/5'
                 }`}
               >

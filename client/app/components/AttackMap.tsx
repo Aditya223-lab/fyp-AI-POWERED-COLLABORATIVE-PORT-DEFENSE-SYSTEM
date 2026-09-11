@@ -57,8 +57,8 @@ export default function AttackMap({ threats }: Props) {
         worldCopyJump
         style={{ height: '100%', width: '100%', background: '#06101c' }}
         attributionControl={false}
-      >  
-      //map api integration and usages for visualizing the attack origins and targets on a global map, with different colors and sizes based on severity, and popups for more details on each attack event.  
+      >
+        {/* Map integration: attack origins/targets on a world map, coloured and sized by severity, with popups per event. */}
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
           subdomains={['a', 'b', 'c', 'd']}

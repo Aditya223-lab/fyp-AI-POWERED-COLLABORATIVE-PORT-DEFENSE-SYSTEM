@@ -3,7 +3,8 @@ import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import jwt from 'jsonwebtoken';
-import { getUserPlan, setUserPlan } from '@/lib/userStore';
+import { getUserPlan, setUserPlan, verifyUserCredentials } from '@/lib/userStore';
+import { clearRateLimit, rateLimit } from '@/lib/rateLimit';
 import type { Role } from '@/types/next-auth';
 
 const adminEmails = (process.env.ADMIN_EMAILS || '')
@@ -30,14 +31,32 @@ const providers: NextAuthOptions['providers'] = [
       password: { label: 'Password', type: 'password' },
     },
     async authorize(creds) {
+      const email = creds?.email?.trim().toLowerCase();
+      const password = creds?.password;
+      if (!email || !password) return null;
+
+      // Brute-force guard: max 5 attempts per email per 15 minutes.
+      const rl = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
+      if (!rl.allowed) return null;
+
       const u = demoUsers.find(
-        (x) =>
-          x.email === creds?.email?.toLowerCase() && x.password === creds?.password,
+        (x) => x.email === email && x.password === password,
       );
-      if (!u) return null;
-      // Seed plan for demo users on first sign-in so their badge is correct.
-      if (getUserPlan(u.email) !== u.plan) setUserPlan(u.email, u.plan);
-      return { id: u.email, email: u.email, name: u.name };
+      if (u) {
+        clearRateLimit(`login:${email}`);
+        // Seed plan for demo users on first sign-in so their badge is correct.
+        if (getUserPlan(u.email) !== u.plan) setUserPlan(u.email, u.plan);
+        return { id: u.email, email: u.email, name: u.name };
+      }
+
+      // Customers added via the admin panel (stored in .data/users.json with
+      // a scrypt password hash) can sign in too.
+      const customer = verifyUserCredentials(email, password);
+      if (customer) {
+        clearRateLimit(`login:${email}`);
+        return { id: customer.email, email: customer.email, name: customer.email };
+      }
+      return null;
     },
   }),
 ];

@@ -105,7 +105,7 @@ export default function SeverityPage() {
             Risk analytics
           </p>
           <h1 className="mt-2 font-display text-4xl font-bold">
-            Severity <span className="text-gradient">Breakdown</span>
+            Severity <span className="text-gradient-animated">Breakdown</span>
           </h1>
           <p className="mt-3 text-white/60 max-w-2xl">
             Live distribution from the Spring backend. Critical and zero-day
@@ -188,14 +188,14 @@ export default function SeverityPage() {
           {order.map((s) => (
             <div
               key={s}
-              className={`rounded-2xl p-5 border bg-gradient-to-br ${
+              className={`rounded-2xl p-5 border bg-gradient-to-br transition-all duration-300 hover:-translate-y-1 ${
                 s === 'critical'
-                  ? 'from-red-500/20 to-red-500/5 border-red-500/30'
+                  ? 'from-red-500/20 to-red-500/5 border-red-500/30 hover:shadow-glow-red'
                   : s === 'high'
-                    ? 'from-orange-500/20 to-orange-500/5 border-orange-500/30'
+                    ? 'from-orange-500/20 to-orange-500/5 border-orange-500/30 hover:shadow-glow-yellow'
                     : s === 'medium'
-                      ? 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30'
-                      : 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30'
+                      ? 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30 hover:shadow-glow-yellow'
+                      : 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 hover:shadow-glow-green'
               }`}
             >
               <p className="text-xs uppercase tracking-widest text-white/60">

@@ -1,0 +1,132 @@
+{
+  "dataset": "CICIDS2017",
+  "algorithm": "Random Forest Classifier",
+  "algorithmDetails": "120 decision trees, max depth 30, class_weight=balanced_subsample, inside a scikit-learn Pipeline with median imputation for missing features.",
+  "trainedAt": "2026-05-21 02:23:57",
+  "accuracy": 0.9982,
+  "macroF1": 0.8486,
+  "testSamples": 189412,
+  "classCount": 11,
+  "classes": [
+    {
+      "name": "BENIGN",
+      "precision": 0.999,
+      "recall": 0.9985,
+      "f1": 0.9987,
+      "support": 50000
+    },
+    {
+      "name": "Bot",
+      "precision": 0.945,
+      "recall": 0.9796,
+      "f1": 0.962,
+      "support": 491
+    },
+    {
+      "name": "BruteForce",
+      "precision": 0.9994,
+      "recall": 1.0,
+      "f1": 0.9997,
+      "support": 3459
+    },
+    {
+      "name": "DDoS",
+      "precision": 0.9999,
+      "recall": 0.9997,
+      "f1": 0.9998,
+      "support": 32007
+    },
+    {
+      "name": "DoS",
+      "precision": 0.9994,
+      "recall": 0.9996,
+      "f1": 0.9995,
+      "support": 63165
+    },
+    {
+      "name": "Heartbleed",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    {
+      "name": "Infiltration",
+      "precision": 1.0,
+      "recall": 0.8889,
+      "f1": 0.9412,
+      "support": 9
+    },
+    {
+      "name": "PortScan",
+      "precision": 0.9994,
+      "recall": 0.9997,
+      "f1": 0.9996,
+      "support": 39733
+    },
+    {
+      "name": "Web Attack - Brute Force",
+      "precision": 0.7473,
+      "recall": 0.7294,
+      "f1": 0.7383,
+      "support": 377
+    },
+    {
+      "name": "Web Attack - Sql Injection",
+      "precision": 0.5,
+      "recall": 0.2,
+      "f1": 0.2857,
+      "support": 5
+    },
+    {
+      "name": "Web Attack - XSS",
+      "precision": 0.4024,
+      "recall": 0.4172,
+      "f1": 0.4096,
+      "support": 163
+    }
+  ],
+  "topFeatures": [
+    {
+      "name": "Destination Port",
+      "importance": 0.0894
+    },
+    {
+      "name": "Init_Win_bytes_backward",
+      "importance": 0.051
+    },
+    {
+      "name": "min_seg_size_forward",
+      "importance": 0.0322
+    },
+    {
+      "name": "Bwd Packets/s",
+      "importance": 0.0271
+    },
+    {
+      "name": "Init_Win_bytes_forward",
+      "importance": 0.0269
+    },
+    {
+      "name": "Total Length of Fwd Packets",
+      "importance": 0.0259
+    },
+    {
+      "name": "Packet Length Mean",
+      "importance": 0.0256
+    },
+    {
+      "name": "Total Length of Bwd Packets",
+      "importance": 0.0256
+    },
+    {
+      "name": "Avg Bwd Segment Size",
+      "importance": 0.0252
+    },
+    {
+      "name": "Subflow Fwd Bytes",
+      "importance": 0.0252
+    }
+  ],
+  "confusionMatrixImage": "/confusion-matrix.png"
+}

@@ -2,130 +2,116 @@
   "dataset": "CICIDS2017",
   "algorithm": "Random Forest Classifier",
   "algorithmDetails": "120 decision trees, max depth 30, class_weight=balanced_subsample, inside a scikit-learn Pipeline with median imputation for missing features.",
-  "trainedAt": "2026-05-21 02:23:57",
-  "accuracy": 0.9982,
-  "macroF1": 0.8486,
-  "testSamples": 189412,
-  "classCount": 11,
+  "trainedAt": "2026-09-11 18:45:50",
+  "accuracy": 0.9992,
+  "macroF1": 0.9858,
+  "testSamples": 190660,
+  "classCount": 9,
   "classes": [
     {
       "name": "BENIGN",
-      "precision": 0.999,
-      "recall": 0.9985,
+      "precision": 0.9991,
+      "recall": 0.9984,
       "f1": 0.9987,
       "support": 50000
     },
     {
       "name": "Bot",
-      "precision": 0.945,
-      "recall": 0.9796,
-      "f1": 0.962,
-      "support": 491
+      "precision": 0.9506,
+      "recall": 0.9854,
+      "f1": 0.9676,
+      "support": 683
     },
     {
       "name": "BruteForce",
-      "precision": 0.9994,
-      "recall": 1.0,
-      "f1": 0.9997,
-      "support": 3459
+      "precision": 0.9992,
+      "recall": 0.9992,
+      "f1": 0.9992,
+      "support": 3634
     },
     {
       "name": "DDoS",
       "precision": 0.9999,
       "recall": 0.9997,
       "f1": 0.9998,
-      "support": 32007
+      "support": 32181
     },
     {
       "name": "DoS",
       "precision": 0.9994,
-      "recall": 0.9996,
+      "recall": 0.9997,
       "f1": 0.9995,
-      "support": 63165
+      "support": 63357
     },
     {
       "name": "Heartbleed",
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "support": 3
+      "support": 4
     },
     {
       "name": "Infiltration",
       "precision": 1.0,
-      "recall": 0.8889,
-      "f1": 0.9412,
-      "support": 9
+      "recall": 0.8462,
+      "f1": 0.9167,
+      "support": 13
     },
     {
       "name": "PortScan",
-      "precision": 0.9994,
+      "precision": 0.9995,
       "recall": 0.9997,
       "f1": 0.9996,
-      "support": 39733
+      "support": 39917
     },
     {
-      "name": "Web Attack - Brute Force",
-      "precision": 0.7473,
-      "recall": 0.7294,
-      "f1": 0.7383,
-      "support": 377
-    },
-    {
-      "name": "Web Attack - Sql Injection",
-      "precision": 0.5,
-      "recall": 0.2,
-      "f1": 0.2857,
-      "support": 5
-    },
-    {
-      "name": "Web Attack - XSS",
-      "precision": 0.4024,
-      "recall": 0.4172,
-      "f1": 0.4096,
-      "support": 163
+      "name": "WebAttack",
+      "precision": 0.9954,
+      "recall": 0.9862,
+      "f1": 0.9908,
+      "support": 871
     }
   ],
   "topFeatures": [
     {
       "name": "Destination Port",
-      "importance": 0.0894
+      "importance": 0.0727
     },
     {
       "name": "Init_Win_bytes_backward",
-      "importance": 0.051
+      "importance": 0.0607
     },
     {
-      "name": "min_seg_size_forward",
-      "importance": 0.0322
-    },
-    {
-      "name": "Bwd Packets/s",
-      "importance": 0.0271
-    },
-    {
-      "name": "Init_Win_bytes_forward",
-      "importance": 0.0269
-    },
-    {
-      "name": "Total Length of Fwd Packets",
-      "importance": 0.0259
-    },
-    {
-      "name": "Packet Length Mean",
-      "importance": 0.0256
+      "name": "Bwd Packet Length Mean",
+      "importance": 0.0377
     },
     {
       "name": "Total Length of Bwd Packets",
-      "importance": 0.0256
+      "importance": 0.0359
+    },
+    {
+      "name": "Packet Length Mean",
+      "importance": 0.034
     },
     {
       "name": "Avg Bwd Segment Size",
-      "importance": 0.0252
+      "importance": 0.0315
     },
     {
-      "name": "Subflow Fwd Bytes",
-      "importance": 0.0252
+      "name": "Total Length of Fwd Packets",
+      "importance": 0.0314
+    },
+    {
+      "name": "Fwd Packet Length Mean",
+      "importance": 0.0305
+    },
+    {
+      "name": "Subflow Bwd Bytes",
+      "importance": 0.0288
+    },
+    {
+      "name": "min_seg_size_forward",
+      "importance": 0.0285
     }
   ],
   "confusionMatrixImage": "/confusion-matrix.png"

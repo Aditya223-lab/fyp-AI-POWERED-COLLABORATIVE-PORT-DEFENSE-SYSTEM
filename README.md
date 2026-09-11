@@ -61,7 +61,7 @@ Demo logins: `admin@demo.com / admin123`, `pro@demo.com / pro123`,
 - Trained by `python-ml/train.py` on the CICIDS2017 dataset (download the
   "MachineLearningCSV" archive into `python-ml/data/cicids2017/`).
 - A `RandomForestClassifier` (120 trees) inside a scikit-learn `Pipeline` with
-  median imputation; ~99.8% accuracy on a held-out test set.
+  median imputation; 99.9% accuracy and 0.986 macro-F1 over 9 classes on a held-out test set of 190,660 flows.
 - `python-ml/export_model_card.py` turns the training artifacts into the data
   shown on the dashboard's **`/model`** page.
 

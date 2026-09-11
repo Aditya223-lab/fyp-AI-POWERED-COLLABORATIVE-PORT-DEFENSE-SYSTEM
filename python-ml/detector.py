@@ -14,19 +14,7 @@ How it works:
   * Detected threats are POSTed to the Spring backend's /api/threats/ingest
     endpoint, which broadcasts them on the SSE channel so the Next.js
     frontend lights up in real time.
-
-Demo:
-    python train.py        # once, to build the model from CICIDS2017
-    python detector.py
-    # In another terminal:
-    nmap -p 2200-2220 localhost
-    # Watch http://localhost:3000 -- alerts appear within ~2 seconds.
-
-Override defaults via env vars:
-    PORTDEFENSE_API   (default http://localhost:8080/api/threats/ingest)
-    PORTDEFENSE_PORTS (default 2201,2202,2203,2204,2205,2206,2207,2208,2209,2210)
-    PORTDEFENSE_WINDOW_SECONDS (default 5)
-    PORTDEFENSE_MIN_PORTS      (default 4)
+)
 """
 
 from __future__ import annotations

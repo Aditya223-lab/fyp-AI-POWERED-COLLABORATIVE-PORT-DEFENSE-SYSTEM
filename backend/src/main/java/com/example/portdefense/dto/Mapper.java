@@ -4,7 +4,9 @@ import com.example.portdefense.domain.Alert;
 import com.example.portdefense.domain.AttackPrediction;
 import com.example.portdefense.domain.CollaborativeInsight;
 import com.example.portdefense.domain.GeoLocation;
+import com.example.portdefense.domain.MonitorTarget;
 import com.example.portdefense.domain.Organization;
+import com.example.portdefense.domain.TargetCheck;
 import com.example.portdefense.domain.Threat;
 
 public final class Mapper {
@@ -22,6 +24,7 @@ public final class Mapper {
                 t.getId(),
                 t.getSourceIP(),
                 t.getTargetPort(),
+                t.getTargetIp(),
                 t.getTargetService(),
                 t.getTimestamp(),
                 t.getSeverity(),
@@ -33,7 +36,9 @@ public final class Mapper {
                 toDto(t.getLocation()),
                 t.isZeroDay(),
                 t.getConfidence(),
-                t.getResponseTime()
+                t.getResponseTime(),
+                t.getReviewStatus(),
+                t.getReviewedBy()
         );
     }
 
@@ -65,7 +70,8 @@ public final class Mapper {
                 a.isRead(),
                 a.getSource(),
                 a.isActionRequired(),
-                a.getOrganizationId()
+                a.getOrganizationId(),
+                a.getStatus() == null ? "ACTIVE" : a.getStatus()
         );
     }
 
@@ -88,6 +94,48 @@ public final class Mapper {
                 i.getOrganizations(),
                 i.getConfidence(),
                 i.getTimestamp()
+        );
+    }
+
+    public static MonitorTargetDto toDto(MonitorTarget t) {
+        return new MonitorTargetDto(
+                t.getId(),
+                t.getName(),
+                t.getType().name(),
+                t.getIpAddress(),
+                t.getHostname(),
+                t.getUrl(),
+                t.getPorts(),
+                t.getOrganizationId(),
+                t.getOwnerEmail(),
+                t.getCreatedAt(),
+                t.isEnabled(),
+                t.getCheckIntervalSeconds(),
+                t.getStatus().name(),
+                t.getLastCheckedAt(),
+                t.getResolvedIps(),
+                t.getLatencyMs(),
+                t.getHttpStatus(),
+                t.getOpenPorts(),
+                t.getTlsExpiresAt(),
+                t.getLastError(),
+                t.getChecksTotal(),
+                t.getChecksUp(),
+                t.uptimePercent(),
+                t.getConsecutiveFailures(),
+                t.getLastScannedAt(),
+                t.getLastFindingsCount()
+        );
+    }
+
+    public static TargetCheckDto toDto(TargetCheck c) {
+        return new TargetCheckDto(
+                c.getCheckedAt(),
+                c.getStatus().name(),
+                c.getLatencyMs(),
+                c.getHttpStatus(),
+                c.getOpenPortCount(),
+                c.getDetail()
         );
     }
 }

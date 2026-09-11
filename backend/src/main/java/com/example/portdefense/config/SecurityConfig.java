@@ -19,7 +19,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
-public class SecurityConfig {
+public class
+SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -63,9 +64,27 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         // Threat and organization reads are public; writes
-                        // (ingest, create/update/delete) still need a session.
+                        // (create/update/delete) still need a session -- except
+                        // the ML ingest endpoint, which the local python-ml
+                        // scanner/simulator posts to without a session.
+                        .requestMatchers(HttpMethod.POST, "/api/threats/ingest").permitAll()
+                        // SIEM log shippers post here without a login (local).
+                        .requestMatchers(HttpMethod.POST, "/api/logs/ingest").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/logs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/threats/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/alerts/**").permitAll()
+                        // Correlation rules: anyone may read the list; only an
+                        // admin may enable/disable a rule.
+                        .requestMatchers(HttpMethod.GET, "/api/rules/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/rules/**").hasRole("ADMIN")
+                        // Premium analysts may triage (PATCH review / status), but
+                        // deleting threats & alerts is admin-only.
+                        .requestMatchers(HttpMethod.DELETE, "/api/threats/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/alerts/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/organizations/**").permitAll()
+                        // Active response (blocking IPs at the host firewall) is
+                        // admin-only — it changes the machine's firewall.
+                        .requestMatchers("/api/response/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()

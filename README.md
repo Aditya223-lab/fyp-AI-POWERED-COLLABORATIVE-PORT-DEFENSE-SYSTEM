@@ -73,7 +73,18 @@ Demo logins: `admin@demo.com / admin123`, `pro@demo.com / pro123`,
   (`01-python-ml.md`, `02-backend.md`, `03-frontend.md`); start with
   `notes/00-READ-ME-FIRST.md`.
 
-## Repository layout note
+## Repository layout
 
-`backend/`, `python-ml/`, `notes/` and the docs live in this repository.
-`frontend/` is tracked in its **own** separate git repository.
+`backend/`, `python-ml/`, `frontend/`, `notes/` and `docs/` all live in this one
+repository (the frontend used to be a separate git repo; it was merged in so a
+single GitHub link holds the whole project).
+
+## Looking inside the database
+
+The backend uses a file-based H2 database in `backend/data/`. To query it:
+
+```powershell
+cd backend
+.iew-db.ps1 -Sql "SELECT NAME, OWNER_EMAIL, IP_ADDRESSES FROM ORGANIZATIONS"
+.iew-db.ps1 -Sql "SELECT NAME, TYPE, IP_ADDRESS, RESOLVED_IPS, STATUS FROM MONITOR_TARGETS"
+```

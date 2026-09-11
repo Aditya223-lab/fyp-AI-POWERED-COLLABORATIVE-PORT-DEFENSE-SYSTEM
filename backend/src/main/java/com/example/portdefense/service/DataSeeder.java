@@ -6,12 +6,16 @@ import com.example.portdefense.domain.AttackPrediction;
 import com.example.portdefense.domain.CollaborativeInsight;
 import com.example.portdefense.domain.Industry;
 import com.example.portdefense.domain.InsightType;
+import com.example.portdefense.domain.MonitorTarget;
 import com.example.portdefense.domain.OrgStatus;
 import com.example.portdefense.domain.Organization;
 import com.example.portdefense.domain.Role;
+import com.example.portdefense.domain.TargetStatus;
+import com.example.portdefense.domain.TargetType;
 import com.example.portdefense.repository.AlertRepository;
 import com.example.portdefense.repository.AttackPredictionRepository;
 import com.example.portdefense.repository.CollaborativeInsightRepository;
+import com.example.portdefense.repository.MonitorTargetRepository;
 import com.example.portdefense.repository.OrganizationRepository;
 import com.example.portdefense.repository.ThreatRepository;
 import com.example.portdefense.repository.UserRepository;
@@ -32,6 +36,7 @@ public class DataSeeder implements CommandLineRunner {
     private final AttackPredictionRepository predictionRepo;
     private final CollaborativeInsightRepository insightRepo;
     private final UserRepository userRepo;
+    private final MonitorTargetRepository targetRepo;
     private final AuthService authService;
     private final ThreatGenerator generator;
 
@@ -41,6 +46,7 @@ public class DataSeeder implements CommandLineRunner {
                       AttackPredictionRepository predictionRepo,
                       CollaborativeInsightRepository insightRepo,
                       UserRepository userRepo,
+                      MonitorTargetRepository targetRepo,
                       AuthService authService,
                       ThreatGenerator generator) {
         this.orgRepo = orgRepo;
@@ -49,6 +55,7 @@ public class DataSeeder implements CommandLineRunner {
         this.predictionRepo = predictionRepo;
         this.insightRepo = insightRepo;
         this.userRepo = userRepo;
+        this.targetRepo = targetRepo;
         this.authService = authService;
         this.generator = generator;
     }
@@ -56,6 +63,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
         seedUsers();
+        seedMonitoredAssets();
 
         if (orgRepo.count() > 0) return;
 
@@ -64,6 +72,41 @@ public class DataSeeder implements CommandLineRunner {
         seedAlerts();
         seedPredictions();
         seedInsights(orgs);
+    }
+
+    /**
+     * Two genuinely real assets so the monitor has something to show on a fresh
+     * database: this machine, and example.com (the domain IANA publishes
+     * precisely so it can be used in documentation and tests). Both are left
+     * unowned, which makes them visible to every signed-in account.
+     */
+    private void seedMonitoredAssets() {
+        if (targetRepo.count() > 0) return;
+        seedAsset("tgt-localhost", "This machine (localhost)", TargetType.HOST,
+                "127.0.0.1", null, null, "22,80,443,3306,5432,6379,8080,8443");
+        seedAsset("tgt-example", "example.com (IANA test site)", TargetType.WEBSITE,
+                "", "example.com", "https://example.com", "443");
+    }
+
+    private void seedAsset(String id, String name, TargetType type, String ip,
+                           String hostname, String url, String ports) {
+        MonitorTarget t = new MonitorTarget();
+        t.setId(id);
+        t.setName(name);
+        t.setType(type);
+        t.setIpAddress(ip);
+        t.setHostname(hostname);
+        t.setUrl(url);
+        t.setPorts(ports);
+        t.setCreatedAt(Instant.now());
+        t.setEnabled(true);
+        t.setCheckIntervalSeconds(30);
+        t.setStatus(TargetStatus.UNKNOWN);
+        t.setChecksTotal(0L);
+        t.setChecksUp(0L);
+        t.setConsecutiveFailures(0);
+        t.setLastFindingsCount(0);
+        targetRepo.save(t);
     }
 
     // Default demo accounts. Change passwords before any non-local deployment.

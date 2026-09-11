@@ -38,7 +38,7 @@ public class ThreatIngestController {
         this.sse = sse;
         this.alertService = alertService;
     }
-
+//first ma ya auxa data
     @PostMapping("/ingest")
     public ResponseEntity<ThreatEventDto> ingest(@RequestBody IngestThreatRequest req) {
         if (req == null || req.sourceIP() == null || req.targetPort() == null) {
@@ -49,11 +49,15 @@ public class ThreatIngestController {
         t.setId("thr-" + UUID.randomUUID().toString().substring(0, 12));
         t.setSourceIP(req.sourceIP());
         t.setTargetPort(req.targetPort());
+        t.setTargetIp(req.targetIp());
         t.setTargetService(req.targetService() == null ? guessService(req.targetPort()) : req.targetService());
         t.setTimestamp(Instant.now());
         t.setSeverity(req.severity() == null ? Severity.MEDIUM : req.severity());
         t.setScanType(req.scanType() == null ? ScanType.CONNECT : req.scanType());
-        t.setAttackType(req.attackType());
+        // The column is 32 chars; a raw CICIDS label ("Web Attack - Brute
+        // Force") plus a caller's own prefix can exceed that, and a rejected
+        // ingest would lose the detection entirely. Truncate instead.
+        t.setAttackType(clamp(req.attackType(), 32));
         t.setAnomalyScore(req.anomalyScore() == null ? 0.5 : req.anomalyScore());
 
         String orgId = req.organizationId();
@@ -78,7 +82,7 @@ public class ThreatIngestController {
         if (loc != null) {
             t.setLocation(new GeoLocation(loc.lat(), loc.lng(), loc.country(), loc.city()));
         }
-
+//written to h2 vanxa
         threatRepository.save(t);
 
         // Auto-raise an alert if this threat is critical or a suspected
@@ -86,8 +90,14 @@ public class ThreatIngestController {
         alertService.createFromThreat(t);
 
         ThreatEventDto dto = Mapper.toDto(t);
+        //front end ma janxa
         sse.broadcast(dto);
         return ResponseEntity.ok(dto);
+    }
+
+    private static String clamp(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     private String guessService(int port) {

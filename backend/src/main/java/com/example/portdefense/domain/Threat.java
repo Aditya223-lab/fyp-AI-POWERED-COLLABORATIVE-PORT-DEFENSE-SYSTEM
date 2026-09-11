@@ -28,6 +28,14 @@ public class Threat {
     @Column(nullable = false)
     private int targetPort;
 
+    /**
+     * Which asset was hit — the registered target's IP, or an organization IP.
+     * Null on older rows and on the synthetic generator's events, where the
+     * victim is only known at organization granularity.
+     */
+    @Column(length = 64)
+    private String targetIp;
+
     @Column(length = 64)
     private String targetService;
 
@@ -68,6 +76,15 @@ public class Threat {
     @Column
     private Integer responseTime;
 
+    // Analyst review of the AI's call: UNREVIEWED (default), CONFIRMED, or
+    // FALSE_POSITIVE. Set from the admin UI; feeds label-quality metrics and
+    // the model-feedback export.
+    @Column(length = 16)
+    private String reviewStatus;
+
+    @Column(length = 190)
+    private String reviewedBy;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -76,6 +93,9 @@ public class Threat {
 
     public int getTargetPort() { return targetPort; }
     public void setTargetPort(int targetPort) { this.targetPort = targetPort; }
+
+    public String getTargetIp() { return targetIp; }
+    public void setTargetIp(String targetIp) { this.targetIp = targetIp; }
 
     public String getTargetService() { return targetService; }
     public void setTargetService(String targetService) { this.targetService = targetService; }
@@ -112,4 +132,10 @@ public class Threat {
 
     public Integer getResponseTime() { return responseTime; }
     public void setResponseTime(Integer responseTime) { this.responseTime = responseTime; }
+
+    public String getReviewStatus() { return reviewStatus; }
+    public void setReviewStatus(String reviewStatus) { this.reviewStatus = reviewStatus; }
+
+    public String getReviewedBy() { return reviewedBy; }
+    public void setReviewedBy(String reviewedBy) { this.reviewedBy = reviewedBy; }
 }

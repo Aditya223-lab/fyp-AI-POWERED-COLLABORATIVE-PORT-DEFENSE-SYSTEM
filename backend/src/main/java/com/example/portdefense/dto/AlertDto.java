@@ -12,6 +12,7 @@ public record AlertDto(
         boolean isRead,
         String source,
         boolean actionRequired,
-        String organizationId
+        String organizationId,
+        String status
 ) {
 }

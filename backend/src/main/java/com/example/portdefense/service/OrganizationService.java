@@ -3,6 +3,7 @@ package com.example.portdefense.service;
 import com.example.portdefense.domain.Industry;
 import com.example.portdefense.domain.Organization;
 import com.example.portdefense.domain.OrgStatus;
+import com.example.portdefense.domain.Threat;
 import com.example.portdefense.dto.CollaborativeInsightDto;
 import com.example.portdefense.dto.CreateOrgRequest;
 import com.example.portdefense.dto.Mapper;
@@ -10,6 +11,7 @@ import com.example.portdefense.dto.OrganizationDto;
 import com.example.portdefense.dto.UpdateOrgRequest;
 import com.example.portdefense.repository.CollaborativeInsightRepository;
 import com.example.portdefense.repository.OrganizationRepository;
+import com.example.portdefense.repository.ThreatRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -21,10 +23,17 @@ public class OrganizationService {
 
     private final OrganizationRepository orgRepo;
     private final CollaborativeInsightRepository insightRepo;
+    private final ThreatRepository threatRepo;
+    private final ThreatGenerator threatGenerator;
 
-    public OrganizationService(OrganizationRepository orgRepo, CollaborativeInsightRepository insightRepo) {
+    public OrganizationService(OrganizationRepository orgRepo,
+                               CollaborativeInsightRepository insightRepo,
+                               ThreatRepository threatRepo,
+                               ThreatGenerator threatGenerator) {
         this.orgRepo = orgRepo;
         this.insightRepo = insightRepo;
+        this.threatRepo = threatRepo;
+        this.threatGenerator = threatGenerator;
     }
 
     public List<OrganizationDto> getAll() {
@@ -78,6 +87,59 @@ public class OrganizationService {
         System.out.println("[OrganizationService] saved org " + saved.getId()
                 + " (" + saved.getName() + ") — DB now has " + orgRepo.count() + " orgs");
         return Mapper.toDto(saved);
+    }
+
+    /**
+     * Provisions a personal demo organization for a customer who has just
+     * upgraded to Premium, so their /attacks view lights up immediately.
+     *
+     * Idempotent: if the customer already owns an org we return that one
+     * instead of piling up duplicates on repeat upgrades. A fresh org is
+     * seeded with a handful of recent attacks (the live publisher keeps
+     * adding more over time because the org joins the random-target pool).
+     */
+    @Transactional
+    public OrganizationDto provisionDemoOrg(String ownerEmail) {
+        if (ownerEmail == null || ownerEmail.isBlank()) {
+            throw new IllegalArgumentException("ownerEmail is required");
+        }
+        String email = ownerEmail.trim().toLowerCase();
+
+        List<Organization> owned = orgRepo.findByOwnerEmailIgnoreCase(email);
+        if (!owned.isEmpty()) {
+            return Mapper.toDto(owned.get(0));
+        }
+
+        Organization o = new Organization();
+        o.setId("org-" + UUID.randomUUID().toString().substring(0, 8));
+        o.setName("Alpha Bank (Demo)");
+        o.setIndustry(Industry.FINANCE);
+        o.setStatus(OrgStatus.ACTIVE);
+        o.setThreatLevel(65);
+        o.setMemberCount(12);
+        Instant now = Instant.now();
+        o.setJoinedDate(now);
+        o.setLastActive(now);
+        o.setThreatScore(65);
+        o.setDetectedAttacks(0L);
+        o.setBlockedAttacks(0L);
+        o.setOwnerEmail(email);
+        o.setIpAddresses(List.of("203.0.113.10", "203.0.113.11", "198.51.100.5"));
+        Organization saved = orgRepo.saveAndFlush(o);
+
+        // Seed a few recent attacks so the dashboard isn't empty on first load.
+        int seeded = 6;
+        List<Organization> single = List.of(saved);
+        for (int i = 0; i < seeded; i++) {
+            // Spread over roughly the last 15 minutes (offset in minutes).
+            threatRepo.save(threatGenerator.generate(single, i * 3));
+        }
+        saved.setDetectedAttacks((long) seeded);
+        Organization withCounts = orgRepo.save(saved);
+
+        System.out.println("[OrganizationService] provisioned demo org " + withCounts.getId()
+                + " for " + email + " with " + seeded + " seeded attacks");
+        return Mapper.toDto(withCounts);
     }
 
     @Transactional

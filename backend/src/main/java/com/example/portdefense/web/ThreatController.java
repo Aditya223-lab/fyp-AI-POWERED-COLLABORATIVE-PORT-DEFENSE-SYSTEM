@@ -5,8 +5,12 @@ import com.example.portdefense.dto.ThreatEventDto;
 import com.example.portdefense.dto.ThreatStatisticsDto;
 import com.example.portdefense.service.ThreatService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,7 +30,7 @@ public class ThreatController {
     @GetMapping
     public List<ThreatEventDto> all() {
         return threatService.getAll();
-    }
+    } //ya auxa hai directly
 
     @GetMapping("/{id}")
     public ResponseEntity<ThreatEventDto> byId(@PathVariable String id) {
@@ -51,5 +55,32 @@ public class ThreatController {
     @GetMapping("/heatmap")
     public List<HeatmapPointDto> heatmap() {
         return threatService.getHeatmap();
+    }
+
+    public record ReviewRequest(String status) {}
+
+    // Analyst marks a threat CONFIRMED / FALSE_POSITIVE (or UNREVIEWED to clear).
+    @PatchMapping("/{id}/review")
+    public ResponseEntity<ThreatEventDto> review(
+            @PathVariable String id,
+            @RequestBody ReviewRequest body,
+            Authentication auth) {
+        String reviewer = auth != null ? auth.getName() : "admin";
+        try {
+            return ResponseEntity.ok(threatService.setReview(id, body.status(), reviewer));
+        } catch (IllegalArgumentException e) {
+            // Unknown status -> 400; unknown id also throws IAE, but a 404 is
+            // more precise, so distinguish on the message.
+            return e.getMessage() != null && e.getMessage().startsWith("unknown threat")
+                    ? ResponseEntity.notFound().build()
+                    : ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        return threatService.delete(id)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }

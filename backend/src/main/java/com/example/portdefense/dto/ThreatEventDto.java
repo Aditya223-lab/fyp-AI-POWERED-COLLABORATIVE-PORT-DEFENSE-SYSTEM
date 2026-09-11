@@ -8,6 +8,7 @@ public record ThreatEventDto(
         String id,
         String sourceIP,
         int targetPort,
+        String targetIp,
         String targetService,
         Instant timestamp,
         Severity severity,
@@ -19,6 +20,8 @@ public record ThreatEventDto(
         LocationDto location,
         boolean isZeroDay,
         double confidence,
-        Integer responseTime
+        Integer responseTime,
+        String reviewStatus,
+        String reviewedBy
 ) {
 }

@@ -44,6 +44,10 @@ Alert {
     @Column(length = 64)
     private String organizationId;
 
+    // Incident-response lifecycle: ACTIVE (default), ACKNOWLEDGED, RESOLVED.
+    @Column(length = 16)
+    private String status;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -70,4 +74,7 @@ Alert {
 
     public String getOrganizationId() { return organizationId; }
     public void setOrganizationId(String organizationId) { this.organizationId = organizationId; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

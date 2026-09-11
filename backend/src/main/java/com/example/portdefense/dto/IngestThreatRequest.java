@@ -6,6 +6,7 @@ import com.example.portdefense.domain.Severity;
 public record IngestThreatRequest(
         String sourceIP,
         Integer targetPort,
+        String targetIp,          // the asset that was hit, when known
         String targetService,
         Severity severity,
         ScanType scanType,

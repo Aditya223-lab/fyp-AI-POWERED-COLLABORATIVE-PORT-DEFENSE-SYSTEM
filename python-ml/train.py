@@ -1,15 +1,4 @@
 """
-train.py - trains the PortDefense AI threat-detection model on CICIDS2017.
-
-Why this exists
----------------
-The old detector trained an IsolationForest on *randomly generated* "normal"
-traffic, and the scanner trained a RandomForest on rows derived from its own
-lookup table - neither model ever saw a real attack. This script replaces that
-with a model trained on the CICIDS2017 intrusion-detection dataset, so it
-actually learns the statistical fingerprints of real port scans, DoS/DDoS,
-brute-force, web attacks and botnet traffic.
-
 What it produces (in python-ml/artifacts/)
 -------------------------------------------
   model.joblib            the trained scikit-learn pipeline + feature list
@@ -18,35 +7,21 @@ What it produces (in python-ml/artifacts/)
   confusion_matrix.csv    per-class evaluation table for your report
   confusion_matrix.png    the same as a figure (needs matplotlib)
 
-Get the data
-------------
-Download the CICIDS2017 "MachineLearningCSV" archive from the Canadian
-Institute for Cybersecurity:
 
-    https://www.unb.ca/cic/datasets/ids-2017.html
-
-Unzip the 8 CSV files into:
-
-    python-ml/data/cicids2017/
-
-Then run:
-
-    python train.py
-
-Useful flags:
-    python train.py --max-benign 150000 --trees 150
 """
 from __future__ import annotations
 
 import argparse
 import glob
 import os
+import re
 import sys
 import time
 
 import joblib
 import numpy as np
 import pandas as pd
+#skilearn it is most importnat imports are here to avoid a circular import with model.py
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
@@ -60,6 +35,9 @@ from sklearn.pipeline import Pipeline
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.getenv("CICIDS_DIR", os.path.join(HERE, "data", "cicids2017"))
+# Attacks replayed against the user's real targets by attack_targets.py land
+# here; folding them back in is how the model "improves accordingly".
+COLLECTED_DIR = os.path.join(HERE, "data", "collected")
 ARTIFACT_DIR = os.path.join(HERE, "artifacts")
 MODEL_PATH = os.path.join(ARTIFACT_DIR, "model.joblib")
 HOLDOUT_PATH = os.path.join(ARTIFACT_DIR, "holdout.csv")
@@ -97,10 +75,14 @@ LABEL_GROUPS = {
 
 def normalise_label(raw: object) -> str:
     """CICIDS2017 web-attack labels embed a Windows-1252 en-dash byte (0x96).
-    Normalise every dash variant + whitespace, then map to an attack family."""
+
+    Depending on how a CSV was decoded that byte arrives as "\x96", U+2013,
+    U+FFFD or a three-character mojibake sequence. The old code listed a few
+    variants and missed U+FFFD, which left the web-attack rows split across
+    four separate classes. Any run of non-ASCII characters in a label *is*
+    that dash, so collapse it to "-" in one step, then map to a family."""
     s = str(raw).strip()
-    for dash in ("\x96", "–", "—"):
-        s = s.replace(dash, "-")
+    s = re.sub(r"[^\x20-\x7e]+", "-", s)
     s = " ".join(s.split())
     return LABEL_GROUPS.get(s, s)
 
@@ -117,9 +99,7 @@ def load_dataset(data_dir: str) -> pd.DataFrame:
     if not csv_paths:
         sys.exit(
             f"\nNo CSV files found in:\n  {data_dir}\n\n"
-            "Download the CICIDS2017 'MachineLearningCSV' archive from\n"
-            "  https://www.unb.ca/cic/datasets/ids-2017.html\n"
-            "and unzip the 8 CSV files into that folder, then re-run train.py.\n"
+           
         )
     frames = []
     for path in csv_paths:
@@ -131,6 +111,31 @@ def load_dataset(data_dir: str) -> pd.DataFrame:
     print(f"  loaded {len(data):,} rows x {data.shape[1]} columns "
           f"from {len(csv_paths)} files")
     return data
+
+
+def load_collected(extra_dir: str, weight: int) -> pd.DataFrame | None:
+    """Load flows collected from live/simulated attacks against the user's own
+    targets (attack_targets.py -> data/collected/*.csv) and repeat each row
+    `weight` times so the model pays extra attention to them. Returns None if
+    the folder is empty, so a fresh checkout trains exactly as before."""
+    if weight <= 0:
+        return None
+    csv_paths = sorted(glob.glob(os.path.join(extra_dir, "*.csv")))
+    if not csv_paths:
+        return None
+    frames = []
+    for path in csv_paths:
+        df = pd.read_csv(path, encoding="latin-1", low_memory=False)
+        df.columns = [str(c).strip() for c in df.columns]
+        frames.append(df)
+    collected = pd.concat(frames, ignore_index=True)
+    if collected.empty:
+        return None
+    upsampled = pd.concat([collected] * weight, ignore_index=True)
+    print(f"  folding in {len(collected):,} collected attack rows "
+          f"x{weight} = {len(upsampled):,} weighted rows "
+          f"from {len(csv_paths)} file(s)")
+    return upsampled
 
 
 def clean(data: pd.DataFrame):
@@ -238,6 +243,10 @@ def main() -> None:
                         help="fraction of data held out for evaluation")
     parser.add_argument("--holdout", type=int, default=3000,
                         help="rows of real held-out data to save for replay.py")
+    parser.add_argument("--extra-dir", default=COLLECTED_DIR,
+                        help="folder of collected attack CSVs to fold back in")
+    parser.add_argument("--extra-weight", type=int, default=3,
+                        help="repeat each collected row N times (0 = ignore them)")
     args = parser.parse_args()
 
     os.makedirs(ARTIFACT_DIR, exist_ok=True)
@@ -245,6 +254,9 @@ def main() -> None:
 
     print("[1/5] loading CICIDS2017 ...")
     raw = load_dataset(args.data_dir)
+    collected = load_collected(args.extra_dir, args.extra_weight)
+    if collected is not None:
+        raw = pd.concat([raw, collected], ignore_index=True)
 
     print("[2/5] cleaning ...")
     X, y, features = clean(raw)

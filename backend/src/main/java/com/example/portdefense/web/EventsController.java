@@ -1,5 +1,6 @@
 package com.example.portdefense.web;
 
+import com.example.portdefense.dto.MonitorTargetDto;
 import com.example.portdefense.dto.ThreatEventDto;
 import com.example.portdefense.service.ThreatService;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ public class EventsController {
 
     private final ThreatService threatService;
     private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
+    private final List<SseEmitter> assetEmitters = new CopyOnWriteArrayList<>();
 
     public EventsController(ThreatService threatService) {
         this.threatService = threatService;
@@ -48,25 +50,49 @@ public class EventsController {
     }
 
     public void broadcast(ThreatEventDto dto) {
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event().name("threat").data(dto));
-            } catch (IOException | IllegalStateException e) {
-                emitter.complete();
-                emitters.remove(emitter);
-            }
+        push(emitters, "threat", dto);
+    }
+
+    /**
+     * Live stream of monitored assets. AssetMonitorService pushes an updated
+     * asset here the moment a real check finishes, so the dashboard's status
+     * lights change without polling.
+     */
+    @GetMapping(path = "/assets", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter assetStream() {
+        SseEmitter emitter = new SseEmitter(0L);
+        assetEmitters.add(emitter);
+
+        emitter.onCompletion(() -> assetEmitters.remove(emitter));
+        emitter.onTimeout(() -> assetEmitters.remove(emitter));
+        emitter.onError(ex -> assetEmitters.remove(emitter));
+
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("hello")
+                    .data(Map.of("connected", true, "ts", System.currentTimeMillis())));
+        } catch (IOException e) {
+            assetEmitters.remove(emitter);
         }
+        return emitter;
+    }
+
+    public void broadcastTarget(MonitorTargetDto dto) {
+        push(assetEmitters, "asset", dto);
     }
 
     public void ping() {
-        for (SseEmitter emitter : emitters) {
+        push(emitters, "ping", Map.of("ts", System.currentTimeMillis()));
+        push(assetEmitters, "ping", Map.of("ts", System.currentTimeMillis()));
+    }
+
+    private static void push(List<SseEmitter> targets, String event, Object payload) {
+        for (SseEmitter emitter : targets) {
             try {
-                emitter.send(SseEmitter.event()
-                        .name("ping")
-                        .data(Map.of("ts", System.currentTimeMillis())));
+                emitter.send(SseEmitter.event().name(event).data(payload));
             } catch (IOException | IllegalStateException e) {
                 emitter.complete();
-                emitters.remove(emitter);
+                targets.remove(emitter);
             }
         }
     }

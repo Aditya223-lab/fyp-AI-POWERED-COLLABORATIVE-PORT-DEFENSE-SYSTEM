@@ -86,6 +86,12 @@ public class ThreatGenerator {
         t.setId("thr-" + UUID.randomUUID().toString().substring(0, 12));
         t.setSourceIP(ip);
         t.setTargetPort(PORTS[rnd.nextInt(PORTS.length)]);
+        // Point the event at one of the victim org's own IPs so the feed shows
+        // who was hit, not just which org.
+        List<String> orgIps = org.getIpAddresses();
+        if (orgIps != null && !orgIps.isEmpty()) {
+            t.setTargetIp(orgIps.get(rnd.nextInt(orgIps.size())));
+        }
         t.setTargetService(SERVICES[rnd.nextInt(SERVICES.length)]);
         t.setTimestamp(Instant.now().minusSeconds(offsetMinutes * 60L));
         t.setSeverity(SEVERITIES[rnd.nextInt(SEVERITIES.length)]);

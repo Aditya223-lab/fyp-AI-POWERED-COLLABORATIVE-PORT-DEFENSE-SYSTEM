@@ -62,6 +62,20 @@ public class OrganizationController {
         return organizationService.getInsights();
     }
 
+    public record ProvisionDemoRequest(String ownerEmail) {}
+
+    // Called right after a customer upgrades to Premium: gives them a personal
+    // demo org (seeded with attacks) so /attacks has data to show immediately.
+    // Idempotent — returns the customer's existing org if they already have one.
+    @PostMapping("/provision-demo")
+    public ResponseEntity<OrganizationDto> provisionDemo(@RequestBody ProvisionDemoRequest req) {
+        try {
+            return ResponseEntity.ok(organizationService.provisionDemoOrg(req.ownerEmail()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<OrganizationDto> byId(@PathVariable String id) {
         OrganizationDto dto = organizationService.getById(id);

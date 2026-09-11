@@ -154,6 +154,44 @@ Every record replayed is a genuine CICIDS2017 flow the model never saw during
 training. The console prints `real=` vs `model=` for each one, plus a running
 accuracy, and each classified threat appears live on the dashboard.
 
+## Attack every IP in the system (`demo_all.py`)
+
+`replay.py` streams held-out attacks at random ports; `attack_targets.py` aims
+them at the assets you registered. `demo_all.py` goes wider still — it builds an
+inventory of **every IP the system knows about** (monitor targets, the IPs each
+monitored website currently resolves to, and every organization's IP list) and
+then, for each one:
+
+1. **inbound** — an external attacker hits it with a real labelled CICIDS2017
+   flow, classified by the model and posted with `targetIp` set, so the
+   dashboard shows which asset was hit;
+2. **outgoing** — the same IP is treated as compromised and attacks back out
+   (lateral movement to another asset, or a beacon to the internet), posted with
+   the system's own IP as `sourceIP` and the family prefixed `Outbound-`;
+3. **logs** — matching SIEM events (SSH brute-force burst, web attack, firewall
+   denies, egress deny, netflow anomaly) are shipped to `/api/logs/ingest` so the
+   correlation engine raises rule-based alerts too.
+
+```powershell
+python demo_all.py                 # one pass over every IP
+python demo_all.py --forever       # keep going until Ctrl-C
+python demo_all.py --rate 6        # 6 events/sec
+python demo_all.py --per-asset 3   # more attacks per IP per round
+python demo_all.py --no-outgoing   # inbound only
+python demo_all.py --no-logs       # skip the SIEM log shipment
+python demo_all.py --only DDoS     # one attack family
+```
+
+Every flow carries its true label, so the script prints `OK`/`MISS` per attack,
+a live accuracy at the end, and appends observations to
+`data/collected/observed.csv` for retraining.
+
+**This sends no packets to any of those IPs.** It posts simulated events built
+from real labelled data. The only parts of the project that make real network
+connections are `target_scanner.py` (hosts you own) and the backend's asset
+monitor. `target_scanner.py` skips `WEBSITE` targets for exactly that reason —
+checking that a site loads is not the same act as port-scanning it.
+
 ## How the AI works
 
 `train.py` trains a scikit-learn pipeline on CICIDS2017:

@@ -136,7 +136,10 @@ def scan_port(ip: str, port: int) -> Optional[bytes]:
 
 def scan_target(target: dict) -> List[Finding]:
     ports = parse_ports(target.get("ports", ""))
-    ip = target["ipAddress"]
+    ip = target.get("ipAddress") or ""
+    if not ip:
+        # A hostname target the backend has not resolved yet.
+        return []
     findings: list[Finding] = []
     for p in ports:
         banner = scan_port(ip, p)
@@ -162,6 +165,7 @@ def post_finding(f: Finding, prediction: Prediction) -> None:
     payload = {
         "sourceIP": f.ip,
         "targetPort": f.port,
+        "targetIp": f.ip,
         "targetService": f.service,
         "severity": prediction.severity,
         "scanType": "connect",
@@ -215,6 +219,11 @@ def run_loop(model: Optional[ThreatModel] = None) -> None:
         if not targets:
             log.debug("no targets registered")
         for target in targets:
+            # Websites registered for monitoring are checked over HTTP by the
+            # backend's AssetMonitorService. Port-scanning a public site is a
+            # different act entirely, so the scanner leaves them alone.
+            if str(target.get("type", "HOST")).upper() == "WEBSITE":
+                continue
             findings = scan_target(target)
             log.info(
                 "scanned %s (%s) — %d ports listening",

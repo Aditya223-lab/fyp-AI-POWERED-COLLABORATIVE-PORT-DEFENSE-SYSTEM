@@ -25,6 +25,10 @@ public class AlertService {
     private final ConcurrentHashMap<String, Instant> lastAlertBySource = new ConcurrentHashMap<>();
     private static final Duration COOLDOWN = Duration.ofSeconds(60);
 
+    // Same idea for the asset monitor, keyed by alert title.
+    private final ConcurrentHashMap<String, Instant> lastMonitorAlertByTitle = new ConcurrentHashMap<>();
+    private static final Duration MONITOR_COOLDOWN = Duration.ofMinutes(5);
+
     public AlertService(AlertRepository repo, MailService mailService) {
         this.repo = repo;
         this.mailService = mailService;
@@ -37,6 +41,86 @@ public class AlertService {
     public List<AlertDto> getForOrganization(String organizationId) {
         return repo.findByOrganizationIdOrderByTimestampDesc(organizationId)
                 .stream().map(Mapper::toDto).toList();
+    }
+
+    // Valid incident-response states. ACTIVE clears an acknowledgement.
+    private static final java.util.Set<String> STATES =
+            java.util.Set.of("ACTIVE", "ACKNOWLEDGED", "RESOLVED");
+
+    public AlertDto updateStatus(String id, String status) {
+        String normalized = status == null ? "" : status.trim().toUpperCase();
+        if (!STATES.contains(normalized)) {
+            throw new IllegalArgumentException("status must be one of " + STATES);
+        }
+        Alert a = repo.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("unknown alert " + id));
+        a.setStatus(normalized);
+        // A resolved/acknowledged alert has been seen, so mark it read too.
+        if (!"ACTIVE".equals(normalized)) a.setRead(true);
+        return Mapper.toDto(repo.save(a));
+    }
+
+    public boolean delete(String id) {
+        if (!repo.existsById(id)) return false;
+        repo.deleteById(id);
+        return true;
+    }
+
+    /**
+     * Raise an alert from the correlation engine (rule-based detection), as
+     * opposed to createFromThreat (ML-based). Cooldown is managed by the caller
+     * (per rule + IP), so this just persists and notifies.
+     */
+    public Alert createCorrelationAlert(String title, String description,
+                                        AlertSeverity severity, String sourceIP,
+                                        String organizationId) {
+        Alert a = new Alert();
+        a.setId("alert-" + UUID.randomUUID().toString().substring(0, 8));
+        a.setTitle(title);
+        a.setDescription(description);
+        a.setSeverity(severity == null ? AlertSeverity.WARNING : severity);
+        a.setTimestamp(Instant.now());
+        a.setRead(false);
+        a.setSource("Correlation-Engine");
+        a.setActionRequired(severity == AlertSeverity.CRITICAL);
+        a.setOrganizationId(organizationId);
+        a.setStatus("ACTIVE");
+        Alert saved = repo.save(a);
+        System.out.println("[AlertService] correlation alert " + saved.getId()
+                + " raised: " + title);
+        mailService.sendAlertEmail(saved);
+        return saved;
+    }
+
+    /**
+     * Raise an alert from the real-time asset monitor (asset down/recovered,
+     * newly exposed port, TLS expiring). Identical titles inside a 5-minute
+     * window are dropped so a flapping asset cannot spam the list.
+     */
+    public Alert createMonitorAlert(String title, String description,
+                                    AlertSeverity severity, String organizationId) {
+        Instant now = Instant.now();
+        Instant last = lastMonitorAlertByTitle.get(title);
+        if (last != null && Duration.between(last, now).compareTo(MONITOR_COOLDOWN) < 0) {
+            return null;
+        }
+        lastMonitorAlertByTitle.put(title, now);
+
+        Alert a = new Alert();
+        a.setId("alert-" + UUID.randomUUID().toString().substring(0, 8));
+        a.setTitle(title);
+        a.setDescription(description);
+        a.setSeverity(severity == null ? AlertSeverity.WARNING : severity);
+        a.setTimestamp(now);
+        a.setRead(false);
+        a.setSource("Asset-Monitor");
+        a.setActionRequired(severity == AlertSeverity.CRITICAL);
+        a.setOrganizationId(organizationId);
+        a.setStatus("ACTIVE");
+        Alert saved = repo.save(a);
+        System.out.println("[AlertService] monitor alert " + saved.getId() + " raised: " + title);
+        mailService.sendAlertEmail(saved);
+        return saved;
     }
 
     /**
@@ -77,6 +161,7 @@ public class AlertService {
         a.setSource("AI-Classifier");
         a.setActionRequired(true);
         a.setOrganizationId(t.getOrganizationId());
+        a.setStatus("ACTIVE");
 
         Alert saved = repo.save(a);
         System.out.println("[AlertService] auto-raised alert " + saved.getId()

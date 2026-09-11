@@ -120,6 +120,28 @@ public class ThreatService {
         return Mapper.toDto(repository.save(t));
     }
 
+    // Valid analyst verdicts on a threat. UNREVIEWED clears a prior review.
+    private static final java.util.Set<String> REVIEW_STATES =
+            java.util.Set.of("UNREVIEWED", "CONFIRMED", "FALSE_POSITIVE");
+
+    public ThreatEventDto setReview(String id, String status, String reviewedBy) {
+        String normalized = status == null ? "" : status.trim().toUpperCase();
+        if (!REVIEW_STATES.contains(normalized)) {
+            throw new IllegalArgumentException("status must be one of " + REVIEW_STATES);
+        }
+        Threat t = repository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("unknown threat " + id));
+        t.setReviewStatus("UNREVIEWED".equals(normalized) ? null : normalized);
+        t.setReviewedBy("UNREVIEWED".equals(normalized) ? null : reviewedBy);
+        return Mapper.toDto(repository.save(t));
+    }
+
+    public boolean delete(String id) {
+        if (!repository.existsById(id)) return false;
+        repository.deleteById(id);
+        return true;
+    }
+
     private Instant cutoffFor(String timeframe) {
         return switch (timeframe == null ? "24h" : timeframe.toLowerCase()) {
             case "1h" -> Instant.now().minus(Duration.ofHours(1));

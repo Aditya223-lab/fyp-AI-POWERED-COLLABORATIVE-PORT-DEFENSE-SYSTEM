@@ -1,5 +1,8 @@
 HELP.md
 target/
+
+### Local secrets (API keys, mail password). Keep .env.example committed. ###
+.env
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

@@ -65,19 +65,11 @@ Demo logins: `admin@demo.com / admin123`, `pro@demo.com / pro123`,
 - `python-ml/export_model_card.py` turns the training artifacts into the data
   shown on the dashboard's **`/model`** page.
 
-## Documentation
-
-- **`STUDY_GUIDE.md`** — a complete, plain-language guide to the whole project,
-  with viva questions and answers.
-- **`notes/`** — deep, section-by-section walkthroughs of all three parts
-  (`01-python-ml.md`, `02-backend.md`, `03-frontend.md`); start with
-  `notes/00-READ-ME-FIRST.md`.
-
 ## Repository layout
 
-`backend/`, `python-ml/`, `frontend/`, `notes/` and `docs/` all live in this one
-repository (the frontend used to be a separate git repo; it was merged in so a
-single GitHub link holds the whole project).
+`backend/`, `python-ml/` and `frontend/` all live in this one repository (the
+frontend used to be a separate git repo; it was merged in so a single GitHub
+link holds the whole project).
 
 ## Looking inside the database
 
